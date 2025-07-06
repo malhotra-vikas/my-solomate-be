@@ -4,8 +4,10 @@ import { verifyFirebaseToken } from "@/lib/firebaseAdmin"
 import { generateEmbedding } from "@/lib/embeddings"
 
 // GET - Retrieve dialog examples for a persona
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: { id: string } }) {
   try {
+    const { id: personaId } = context.params
+
     // Verify authentication
     const authHeader = req.headers.get("authorization")
     if (!authHeader?.startsWith("Bearer ")) {
@@ -18,7 +20,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: "Invalid token" }, { status: 401 })
     }
 
-    const personaId = params.id
     const supabase = createClient()
 
     // Get all dialog examples for the persona
@@ -41,7 +42,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // POST - Add a new dialog example
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: { params: { id: string } }) {
+  const { id: personaId } = context.params
+
   try {
     // Verify authentication
     const authHeader = req.headers.get("authorization")
@@ -55,7 +58,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: "Invalid token" }, { status: 401 })
     }
 
-    const personaId = params.id
     const body = await req.json()
 
     // Validate required fields
@@ -98,8 +100,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 // PUT - Update a dialog example
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+  const { id: personaId } = context.params
+
   try {
+
     // Verify authentication
     const authHeader = req.headers.get("authorization")
     if (!authHeader?.startsWith("Bearer ")) {
@@ -143,7 +148,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       .from("dialog_bank")
       .update(updateData)
       .eq("id", dialogId)
-      .eq("persona_id", params.id) // Ensure it belongs to the correct persona
+      .eq("persona_id", personaId) // Ensure it belongs to the correct persona
       .select()
       .single()
 
@@ -164,7 +169,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE - Remove a dialog example
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
+
+  const { id: personaId } = context.params
+
   try {
     // Verify authentication
     const authHeader = req.headers.get("authorization")
@@ -188,7 +196,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     const supabase = createClient()
 
     // Delete the dialog example
-    const { error } = await supabase.from("dialog_bank").delete().eq("id", dialogId).eq("persona_id", params.id) // Ensure it belongs to the correct persona
+    const { error } = await supabase.from("dialog_bank").delete().eq("id", dialogId).eq("persona_id", personaId) // Ensure it belongs to the correct persona
 
     if (error) {
       console.error("Error deleting dialog example:", error)

@@ -80,6 +80,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       updates.voice_id = voice_settings.elevenlabs_voice_id
     }
 
+    const supabase = createClient()
     const { data: persona, error } = await supabase
       .from("personas")
       .update(updates)
@@ -107,6 +108,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 
   try {
+    const supabase = createClient()
+
     const { data: persona, error } = await supabase
       .from("personas")
       .update({ is_active: false })

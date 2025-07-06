@@ -12,6 +12,16 @@ export interface UserProfile {
   updated_at: string
 }
 
+export interface Memory {
+  id: string
+  user_id: string
+  persona_id: string
+  summary: string
+  embedding: number[]
+  created_at: string
+}
+
+
 export interface PersonalityConfig {
   traits: string[]
   speaking_style: {

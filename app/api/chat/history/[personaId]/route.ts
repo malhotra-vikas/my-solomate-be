@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { auth } from "@/lib/firebaseAdmin"
-import type { ConversationMessage } from "@/types"
+import type { Conversation } from "@/types"
 
 // Helper to get user ID from Authorization header
 async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: { personaId: s
       return NextResponse.json({ error: "Failed to fetch conversation history" }, { status: 500 })
     }
 
-    return NextResponse.json(conversations as ConversationMessage[], { status: 200 })
+    return NextResponse.json(conversations as Conversation[], { status: 200 })
   } catch (error: any) {
     console.error("GET chat history error:", error.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
