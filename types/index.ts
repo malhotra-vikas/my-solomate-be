@@ -37,13 +37,26 @@ export type Persona = {
   id: string
   name: string
   description: string
-  personality_traits: string[] // Existing field, derived from personality_config.personality.traits
-  voice_id: string // Existing field, derived from voice_config.elevenlabs_voice_id
-  tone_description: string // Existing field, derived from personality_config.personality.speaking_style.tone
+  personality_traits: string[]
+  voice_id: string
+  tone_description: string
   avatar_url: string
-  initial_prompt: string // Existing field, derived from system_prompt
-  personality_config: PersonaPersonality // New field for detailed personality
-  voice_config: PersonaVoiceSettings // New field for detailed voice settings
+  initial_prompt: string
+  personality_config: PersonaPersonality
+  voice_config: PersonaVoiceSettings
+}
+
+export type PersonaDialogExample = {
+  id: string
+  persona_id: string
+  user_input: string
+  expected_response: string
+  context?: string
+  style_tags: string[]
+  personality_tags: string[]
+  embedding?: number[]
+  created_at: string
+  updated_at: string
 }
 
 export type ConversationMessage = {

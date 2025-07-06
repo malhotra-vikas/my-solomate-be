@@ -1,9 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { auth } from "@/lib/firebaseAdmin"
 import type { Persona, PersonaPersonality, PersonaVoiceSettings } from "@/types"
+import { auth } from "@/lib/firebaseAdmin"
 
-// Helper to get user ID from Authorization header
 async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
   const authHeader = req.headers.get("Authorization")
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -19,15 +18,19 @@ async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
   }
 }
 
+// GET - List all personas
 export async function GET(req: NextRequest) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
-    // Ensure user is authenticated
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const { data: personas, error } = await supabase.from("personas").select("*")
+    const { data: personas, error } = await supabase
+      .from("personas")
+      .select("*")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
 
     if (error) {
       console.error("Error fetching personas:", error)
@@ -41,6 +44,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// POST - Create new persona
 export async function POST(req: NextRequest) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
@@ -48,40 +52,33 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const {
+    const personaData = await req.json()
+
+    // Extract required fields
+    const { name, description = "", avatar_url = "", personality, voice_settings, system_prompt } = personaData
+
+    if (!name || !personality || !voice_settings || !system_prompt) {
+      return NextResponse.json(
+        { error: "name, personality, voice_settings, and system_prompt are required" },
+        { status: 400 },
+      )
+    }
+
+    // Prepare data for insertion
+    const insertData = {
       name,
       description,
       avatar_url,
-      personality, // This is the new detailed personality object
-      voice_settings, // This is the new detailed voice settings object
-      system_prompt, // This maps to initial_prompt
-    } = await req.json()
-
-    if (!name || !description || !personality || !voice_settings || !system_prompt) {
-      return NextResponse.json({ error: "Missing required fields for persona creation" }, { status: 400 })
+      personality_config: personality as PersonaPersonality,
+      voice_config: voice_settings as PersonaVoiceSettings,
+      initial_prompt: system_prompt,
+      // Derived fields for backward compatibility
+      personality_traits: personality.traits || [],
+      voice_id: voice_settings.elevenlabs_voice_id,
+      tone_description: personality.speaking_style?.tone || "",
     }
 
-    // Extract fields for backward compatibility and direct use
-    const personality_traits = personality.traits || []
-    const voice_id = voice_settings.elevenlabs_voice_id
-    const tone_description = personality.speaking_style?.tone || ""
-    const initial_prompt = system_prompt
-
-    const { data, error } = await supabase
-      .from("personas")
-      .insert({
-        name,
-        description,
-        personality_traits,
-        voice_id,
-        tone_description,
-        avatar_url,
-        initial_prompt,
-        personality_config: personality as PersonaPersonality, // Store the full JSONB
-        voice_config: voice_settings as PersonaVoiceSettings, // Store the full JSONB
-      })
-      .select()
-      .single()
+    const { data, error } = await supabase.from("personas").insert(insertData).select().single()
 
     if (error) {
       console.error("Error creating persona:", error)
