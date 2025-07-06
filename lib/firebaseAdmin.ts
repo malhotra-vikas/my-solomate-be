@@ -13,6 +13,7 @@ if (!admin.apps.length) {
 }
 
 export const auth = admin.auth()
+export const messaging = admin.messaging() // ✅ Add this line
 
 export async function verifyFirebaseToken(token: string) {
   try {

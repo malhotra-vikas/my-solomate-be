@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import { auth } from "@/lib/firebaseAdmin"
 // import Stripe from 'stripe' // Uncomment if you install stripe
 
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     // For now, simulate direct update (REMOVE IN PRODUCTION)
     const updateData: any = { current_tier: tier }
     const subscriptionData: any = { user_id: userId, tier: tier, status: "active" }
+    const supabase = createClient()
 
     if (tier === "add_on") {
       updateData.talk_time_minutes =

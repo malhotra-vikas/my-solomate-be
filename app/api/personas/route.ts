@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import { auth } from "@/lib/firebaseAdmin"
 import type { CreatePersonaRequest } from "@/types"
 
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  const supabase = createClient()
 
   try {
     const { data: personas, error } = await supabase
@@ -66,6 +67,8 @@ export async function POST(req: NextRequest) {
     const personality_traits = personality.traits || []
     const voice_id = voice_settings.elevenlabs_voice_id
     const tone_description = personality.speaking_style?.tone || ""
+
+    const supabase = createClient()
 
     const { data: persona, error } = await supabase
       .from("personas")

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import { auth } from "@/lib/firebaseAdmin"
 import type { UpdatePersonaRequest } from "@/types"
 
@@ -27,6 +27,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 
   try {
+    const supabase = createClient()
+
     const { data: persona, error } = await supabase
       .from("personas")
       .select("*")

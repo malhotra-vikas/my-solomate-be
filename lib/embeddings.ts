@@ -1,5 +1,5 @@
 import OpenAI from "openai"
-import { supabase } from "./supabase"
+import { createClient } from "./supabase"
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -28,6 +28,8 @@ export async function findSimilarDialogExamples(
   try {
     // Generate embedding for user input
     const embedding = await generateEmbedding(userInput)
+
+    const supabase = createClient()
 
     // Find similar examples using the PostgreSQL function
     const { data, error } = await supabase.rpc("find_similar_dialog_examples", {
@@ -59,6 +61,8 @@ export async function findSimilarMemories(
   try {
     // Generate embedding for the query
     const embedding = await generateEmbedding(query)
+
+    const supabase = createClient()
 
     // Find similar memories using the PostgreSQL function
     const { data, error } = await supabase.rpc("find_similar_memories", {
@@ -114,6 +118,9 @@ export function formatDialogExamples(examples: any[]): string {
 export async function storeConversationEmbedding(conversationId: string, content: string): Promise<void> {
   try {
     const embedding = await generateEmbedding(content)
+
+    const supabase = createClient()
+
 
     // Store embedding for future context retrieval
     // This could be used to make conversations searchable

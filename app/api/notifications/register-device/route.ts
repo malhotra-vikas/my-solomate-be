@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import { auth } from "@/lib/firebaseAdmin"
 
 // Helper to get user ID from Authorization header
@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     if (!deviceToken) {
       return NextResponse.json({ error: "Device token is required" }, { status: 400 })
     }
+    const supabase = createClient()
 
     // Store device token in user preferences or a dedicated table
     // For simplicity, adding to user preferences JSONB

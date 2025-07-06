@@ -1,11 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/firebaseAdmin"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import type { UserProfile } from "@/types"
 
 export async function POST(req: NextRequest) {
   try {
     const { idToken } = await req.json()
+    const supabase = createClient()
 
     // Verify Firebase ID token
     const decodedToken = await auth.verifyIdToken(idToken)

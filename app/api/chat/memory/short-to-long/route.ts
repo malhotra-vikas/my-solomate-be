@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import { openai } from "@/lib/openai"
 import { auth } from "@/lib/firebaseAdmin"
 import type { Memory } from "@/types"
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
       input: summary,
     })
     const embedding = embeddingResponse.data[0].embedding
+    const supabase = createClient()
 
     // 2. Store long-term memory in Supabase
     const { data, error } = await supabase

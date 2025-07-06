@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import { messaging } from "@/lib/firebaseAdmin"
 
 // This route would typically be called by a cron job or internal service, not directly by the client.
@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
     if (!userId || !personaId || !messageContent) {
       return NextResponse.json({ error: "User ID, Persona ID, and message content are required" }, { status: 400 })
     }
+    const supabase = createClient()
 
     // 1. Fetch user's device token
     const { data: user, error: userError } = await supabase

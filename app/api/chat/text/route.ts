@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import { aiSdkOpenai, generateText } from "@/lib/openai"
 import { auth } from "@/lib/firebaseAdmin"
 import { findSimilarDialogExamples } from "@/lib/embeddings"
@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
     if (!personaId || !message) {
       return NextResponse.json({ error: "Persona ID and message are required" }, { status: 400 })
     }
+
+    const supabase = createClient()
 
     // 1. Fetch user profile
     const { data: userProfile, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()

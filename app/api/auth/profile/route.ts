@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/firebaseAdmin"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import type { UserProfile } from "@/types"
 
 // Helper to get user ID from Authorization header
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  const supabase = createClient()
 
   try {
     const { data: userProfile, error } = await supabase.from("users").select("*").eq("id", userId).single()
@@ -48,6 +49,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const updates = await req.json()
+    const supabase = createClient()
 
     const { data, error } = await supabase.from("users").update(updates).eq("id", userId).select().single()
 

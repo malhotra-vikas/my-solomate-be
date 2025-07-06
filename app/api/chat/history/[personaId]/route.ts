@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import { auth } from "@/lib/firebaseAdmin"
 import type { ConversationMessage } from "@/types"
 
@@ -26,6 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: { personaId: s
   }
 
   const { personaId } = params
+  const supabase = createClient()
 
   try {
     const { data: conversations, error } = await supabase
