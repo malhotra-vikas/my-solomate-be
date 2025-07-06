@@ -12,9 +12,9 @@
 
 # --- Configuration Variables (Update these before running) ---
 BASE_URL="http://localhost:3000" # Or your Vercel deployment URL
-FIREBASE_ID_TOKEN="eyJhbGciOiJSUzI1NiIsImtpZCI6IjQ3YWU0OWM0YzlkM2ViODVhNTI1NDA3MmMzMGQyZThlNzY2MWVmZTEiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiQW5vdGhlciBOZXcgVXNlciIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9teXNvbG9tYXRlIiwiYXVkIjoibXlzb2xvbWF0ZSIsImF1dGhfdGltZSI6MTc1MTc3NjQ0OCwidXNlcl9pZCI6IkU0Mkd6TEs0bThhN2tvSmJ3WU1KdXFGOWFnSjMiLCJzdWIiOiJFNDJHekxLNG04YTdrb0pid1lNSnVxRjlhZ0ozIiwiaWF0IjoxNzUxNzc2NDQ4LCJleHAiOjE3NTE3ODAwNDgsImVtYWlsIjoiYW5vdGhlcl9uZXdfdXNlckBleGFtcGxlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJhbm90aGVyX25ld191c2VyQGV4YW1wbGUuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoiY3VzdG9tIn19.EX_KHD9Q_mhiiyCen50CzSpFsXL0FyOSGliHznWiz8uJXu1RbDUTKLdXD0rf6CSaAYWwfxW-HkDBFjCGmc2mQgHg0HUIP5OkzvVpe-DuAThlrjuAoPyNUS4reYmXCPFtBrGoCJRHWf3n3TAmZmx1wkamWdsxobUgBd4tKx05x8BWMD741IU5gGa-9gzeGfadSuw_trB_95W7Y4-Q61zT4WNP-Kewm5m3yvPVO4wOAIgZvXHu_u39_xiRSh5HWZzwMT875cpTKT34WhfmPn8SKfeSl0sqVDi0JSTSWraiJFI2xf6n9Vr5NMtcr8HcCOC5yrA2lKqeb0LcsWVMjPz20Q"
+FIREBASE_ID_TOKEN="eyJhbGciOiJSUzI1NiIsImtpZCI6IjQ3YWU0OWM0YzlkM2ViODVhNTI1NDA3MmMzMGQyZThlNzY2MWVmZTEiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiQW5vdGhlciBOZXcgVXNlciIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9teXNvbG9tYXRlIiwiYXVkIjoibXlzb2xvbWF0ZSIsImF1dGhfdGltZSI6MTc1MTc3NjQ0OCwidXNlcl9pZCI6IkU0Mkd6TEs0bThhN2tvSmJ3WU1KdXFGOWFnSjMiLCJzdWIiOiJFNDJHekxLNG04YTdrb0pid1lNSnVxRjlhZ0ozIiwiaWF0IjoxNzUxNzc2NDQ4LCJleHAiOjE3NTE3ODAwNDgsImVtYWlsIjoiYW5vdG90aGVyX25ld191c2VyQGV4YW1wbGUuY29tIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbImFub3RoZXJfbmV3X3VzZXJAZXhhbXBsZS5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJjdXN0b20ifX0.EX_KHD9Q_mhiiyCen50CzSpFsXL0FyOSGliHznWiz8uJXu1RbDUTKLtXD0rf6CSaAYWwfxW-HkDBFjCGmc2mQgHg0HUIP5OkzvVpe-DuAThlrjuAoPyNUS4reYmXCPFbBrGoCJRHWf3n3TAmZmx1wkamWdsxobUgBd4tKx05x8BWMD741IU5gGa-9gzeGfadSuw_trB_95W7Y4-Q61zT4WNP-Kewm5m3yvPVO4wOAIgZvXHu_u39_xiRSh5HWZzwMT875cpTKT34WhfmPn8SKfeSl0sqVDi0JSTSWraiJFI2xf6n9Vr5NMtcr8HcCOC5yrA2lKqeb0LcsWVMjPz20Q"
 USER_ID="E42GzLK4m8a7koJbwYMJuqF9agJ3"
-PERSONA_ID="957864de-fb13-425d-8a02-be23258a8640"
+PERSONA_ID="957864de-fb13-425d-8a02-be23258a8640" # Replace with an actual persona ID from /api/personas GET or the ID from the POST request below
 INTERNAL_API_KEY="YOUR_INTERNAL_API_KEY" # For /api/notifications/send-checkin
 
 echo "--- Testing mySOLO Mate BE API Endpoints ---"
@@ -78,6 +78,77 @@ curl -X POST "${BASE_URL}/api/personas/${PERSONA_ID}/add-friend" \
 -H "Authorization: Bearer ${FIREBASE_ID_TOKEN}" \
 -H "Content-Type: application/json" \
 -d '{}'
+echo -e "\n"
+
+echo "--- 2.4. Create New Persona (POST /api/personas) ---"
+# Note: After running this, you can copy the 'id' from the response and
+# paste it into the PERSONA_ID variable above to test the PUT request.
+curl -X POST "${BASE_URL}/api/personas" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer ${FIREBASE_ID_TOKEN}" \
+-d '{
+  "name": "Test Persona",
+  "description": "A persona created for testing purposes.",
+  "avatar_url": "/placeholder.svg?height=100&width=100",
+  "personality": {
+    "traits": ["friendly", "helpful"],
+    "speaking_style": {
+      "tone": "calm",
+      "pace": "moderate",
+      "formality": "casual",
+      "humor": "none"
+    },
+    "background": {
+      "role": "test assistant",
+      "expertise": ["testing", "debugging"],
+      "interests": ["automation", "quality assurance"]
+    },
+    "conversation_rules": ["Be concise", "Answer directly"]
+  },
+  "voice_settings": {
+    "elevenlabs_voice_id": "21m00Tcm4TlvDq8ikWAM",
+    "stability": 0.7,
+    "similarity_boost": 0.8,
+    "style": 0.0,
+    "use_speaker_boost": true
+  },
+  "system_prompt": "You are a test persona designed to assist with API testing."
+}'
+echo -e "\n"
+
+echo "--- 2.5. Update Persona (PUT /api/personas/[id]) ---"
+# IMPORTANT: Replace YOUR_PERSONA_ID with the ID of a persona you want to update.
+# You can use the ID from the 'Create New Persona' response above.
+curl -X PUT "${BASE_URL}/api/personas/${PERSONA_ID}" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer ${FIREBASE_ID_TOKEN}" \
+-d '{
+  "name": "Updated Test Persona",
+  "description": "This persona has been updated.",
+  "personality": {
+    "traits": ["friendly", "helpful", "updated"],
+    "speaking_style": {
+      "tone": "enthusiastic",
+      "pace": "fast",
+      "formality": "casual",
+      "humor": "witty"
+    },
+    "background": {
+      "role": "updated test assistant",
+      "expertise": ["testing", "debugging", "refactoring"],
+      "interests": ["automation", "quality assurance", "performance"]
+    },
+    "conversation_rules": ["Be concise", "Answer directly", "Provide more details when asked"]
+  },
+  "voice_settings": {
+    "elevenlabs_voice_id": "pNInz6obpgDQGXGNiebr",
+    "stability": 0.8,
+    "similarity_boost": 0.9,
+    "style": 0.1,
+    "use_speaker_boost": false
+  },
+  "system_prompt": "You are an updated test persona designed to assist with API testing and provide more detailed responses."
+}'
 echo -e "\n"
 
 # --- 3. Chat Endpoints ---
