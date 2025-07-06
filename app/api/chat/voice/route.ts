@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
     // 7. Store audio in Supabase Storage
     const audioFileName = `${userId}/${personaId}/${Date.now()}.mp3`
     const { data: storageData, error: storageError } = await supabase.storage
-      .from("conversation_audio") // Create a bucket named 'conversation_audio' in Supabase
+      .from("conversationaudio") // Create a bucket named 'conversationaudio' in Supabase
       .upload(audioFileName, audioBuffer, {
         contentType: "audio/mpeg",
         upsert: false,
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to store audio response" }, { status: 500 })
     }
 
-    const audioUrl = supabase.storage.from("conversation_audio").getPublicUrl(storageData.path).data.publicUrl
+    const audioUrl = supabase.storage.from("conversationaudio").getPublicUrl(storageData.path).data.publicUrl
 
     // 8. Store user message and AI response in conversations
     await supabase.from("conversations").insert({
