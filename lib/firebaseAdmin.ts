@@ -1,3 +1,4 @@
+// lib/firebaseAdmin.ts
 import * as admin from "firebase-admin"
 
 if (!admin.apps.length) {
@@ -12,4 +13,13 @@ if (!admin.apps.length) {
 }
 
 export const auth = admin.auth()
-export const messaging = admin.messaging()
+
+export async function verifyFirebaseToken(token: string) {
+  try {
+    const decoded = await auth.verifyIdToken(token)
+    return decoded
+  } catch (err) {
+    console.error("Token verification failed:", err)
+    return null
+  }
+}

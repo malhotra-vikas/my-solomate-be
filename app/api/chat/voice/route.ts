@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import { aiSdkOpenai, generateText, openai } from "@/lib/openai"
 import { elevenlabs } from "@/lib/elevenlabs"
 import { auth } from "@/lib/firebaseAdmin"
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     if (!audioFile || !personaId) {
       return NextResponse.json({ error: "Audio file and persona ID are required" }, { status: 400 })
     }
+    const supabase = createClient()
 
     // 1. Fetch user profile and check talk time
     const { data: userProfile, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()

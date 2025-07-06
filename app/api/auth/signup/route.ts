@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/firebaseAdmin"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase"
 import type { UserProfile } from "@/types"
 
 export async function POST(req: NextRequest) {
@@ -13,6 +13,8 @@ export async function POST(req: NextRequest) {
       password,
       displayName: name,
     })
+
+    const supabase = createClient()
 
     // 2. Store user profile in Supabase
     const { data, error } = await supabase

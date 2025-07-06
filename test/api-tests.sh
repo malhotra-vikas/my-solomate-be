@@ -8,7 +8,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-BASE_URL="http://localhost:3000"
+BASE_URL="http://localhost:3002"
 FIREBASE_TOKEN="" # Will be set after signup
 USER_ID="" # Will be set after signup
 PERSONA_ID="" # Will be set after getting personas
@@ -81,32 +81,67 @@ echo -e "${BLUE}2. Getting Firebase Token${NC}"
 # For testing, we'll use the script to get a token
 if [ -f "scripts/get-firebase-id-token.mjs" ]; then
     echo "Getting Firebase token..."
-    TOKEN_RESPONSE=$(node scripts/get-firebase-id-token.mjs)
-    if [ $? -eq 0 ]; then
+    # Capture the last line which should be the token
+    TOKEN_RESPONSE=$(node scripts/get-firebase-id-token.mjs 2>/dev/null | tail -1)
+    if [ $? -eq 0 ] && [ -n "$TOKEN_RESPONSE" ] && [[ "$TOKEN_RESPONSE" == eyJ* ]]; then
         FIREBASE_TOKEN="$TOKEN_RESPONSE"
         echo -e "${GREEN}✓ Firebase token obtained${NC}"
     else
-        echo -e "${YELLOW}⚠ Could not get Firebase token automatically. Using manual token if available.${NC}"
-        # You can set a manual token here for testing
-        FIREBASE_TOKEN="eyJhbGciOiJSUzI1NiIsImtpZCI6IjQ3YWU0OWM0YzlkM2ViODVhNTI1NDA3MmMzMGQyZThlNzY2MWVmZTEiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiQW5vdGhlciBOZXcgVXNlciIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9teXNvbG9tYXRlIiwiYXVkIjoibXlzb2xvbWF0ZSIsImF1dGhfdGltZSI6MTc1MTc3NjQ0OCwidXNlcl9pZCI6IkU0Mkd6TEs0bThhN2tvSmJ3WU1KdXFGOWFnSjMiLCJzdWIiOiJFNDJHekxLNG04YTdrb0pid1lNSnVxRjlhZ0ozIiwiaWF0IjoxNzUxNzc2NDQ4LCJleHAiOjE3NTE3ODAwNDgsImVtYWlsIjoiYW5vdGhlcl9uZXdfdXNlckBleGFtcGxlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJhbm90aGVyX25ld191c2VyQGV4YW1wbGUuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoiY3VzdG9tIn19.EX_KHD9Q_mhiiyCen50CzSpFsXL0FyOSGliHznWiz8uJXu1RbDUTKLdXD0rf6CSaAYWwfxW-HkDBFjCGmc2mQgHg0HUIP5OkzvVpe-DuAThlrjuAoPyNUS4reYmXCPFtBrGoCJRHWf3n3TAmZmx1wkamWdsxobUgBd4tKx05x8BWMD741IU5gGa-9gzeGfadSuw_trB_95W7Y4-Q61zT4WNP-Kewm5m3yvPVO4wOAIgZvXHu_u39_xiRSh5HWZzwMT875cpTKT34WhfmPn8SKfeSl0sqVDi0JSTSWraiJFI2xf6n9Vr5NMtcr8HcCOC5yrA2lKqeb0LcsWVMjPz20Q"
+        echo -e "${YELLOW}⚠ Could not get Firebase token automatically. Generating new one...${NC}"
+        # Generate a fresh token for the user we just created
+        if [ -n "$USER_ID" ]; then
+            echo "Generating token for user: $USER_ID"
+            TOKEN_RESPONSE=$(node -e "
+                import('./scripts/get-firebase-id-token.mjs').then(async (module) => {
+                    const token = await module.getFirebaseIdToken('$USER_ID');
+                    console.log(token);
+                }).catch(console.error);
+            " 2>/dev/null | tail -1)
+            if [[ "$TOKEN_RESPONSE" == eyJ* ]]; then
+                FIREBASE_TOKEN="$TOKEN_RESPONSE"
+                echo -e "${GREEN}✓ Firebase token generated for new user${NC}"
+            fi
+        fi
     fi
 else
-    echo -e "${YELLOW}⚠ Firebase token script not found. Using hardcoded token.${NC}"
-    FIREBASE_TOKEN="eyJhbGciOiJSUzI1NiIsImtpZCI6IjQ3YWU0OWM0YzlkM2ViODVhNTI1NDA3MmMzMGQyZThlNzY2MWVmZTEiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiQW5vdGhlciBOZXcgVXNlciIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9teXNvbG9tYXRlIiwiYXVkIjoibXlzb2xvbWF0ZSIsImF1dGhfdGltZSI6MTc1MTc3NjQ0OCwidXNlcl9pZCI6IkU0Mkd6TEs0bThhN2tvSmJ3WU1KdXFGOWFnSjMiLCJzdWIiOiJFNDJHekxLNG04YTdrb0pid1lNSnVxRjlhZ0ozIiwiaWF0IjoxNzUxNzc2NDQ4LCJleHAiOjE3NTE3ODAwNDgsImVtYWlsIjoiYW5vdGhlcl9uZXdfdXNlckBleGFtcGxlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJhbm90aGVyX25ld191c2VyQGV4YW1wbGUuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoiY3VzdG9tIn19.EX_KHD9Q_mhiiyCen50CzSpFsXL0FyOSGliHznWiz8uJXu1RbDUTKLdXD0rf6CSaAYWwfxW-HkDBFjCGmc2mQgHg0HUIP5OkzvVpe-DuAThlrjuAoPyNUS4reYmXCPFtBrGoCJRHWf3n3TAmZmx1wkamWdsxobUgBd4tKx05x8BWMD741IU5gGa-9gzeGfadSuw_trB_95W7Y4-Q61zT4WNP-Kewm5m3yvPVO4wOAIgZvXHu_u39_xiRSh5HWZzwMT875cpTKT34WhfmPn8SKfeSl0sqVDi0JSTSWraiJFI2xf6n9Vr5NMtcr8HcCOC5yrA2lKqeb0LcsWVMjPz20Q"
+    echo -e "${YELLOW}⚠ Firebase token script not found.${NC}"
+fi
+
+# If we still don't have a token, skip auth tests
+if [ -z "$FIREBASE_TOKEN" ] || [[ "$FIREBASE_TOKEN" != eyJ* ]]; then
+    echo -e "${RED}✗ No valid Firebase token available. Skipping auth tests.${NC}"
+    echo "Please ensure your Firebase configuration is correct."
+    exit 1
 fi
 echo ""
 
 # Test 3: User Login (verify token works)
 echo -e "${BLUE}3. Testing User Login${NC}"
-LOGIN_RESPONSE=$(make_request POST "/api/auth/login" '{
-    "idToken": "'$FIREBASE_TOKEN'"
-}' false)
+LOGIN_PAYLOAD='{"idToken":"'$FIREBASE_TOKEN'"}'
+echo "Login payload: $LOGIN_PAYLOAD"
+LOGIN_RESPONSE=$(make_request POST "/api/auth/login" "$LOGIN_PAYLOAD" false)
 echo "Response: $LOGIN_RESPONSE"
 
 if echo "$LOGIN_RESPONSE" | grep -q "User logged in successfully"; then
     echo -e "${GREEN}✓ Login successful${NC}"
+elif echo "$LOGIN_RESPONSE" | grep -q "Invalid token"; then
+    echo -e "${RED}✗ Login failed - Invalid or expired token${NC}"
+    echo "Trying to generate a fresh token..."
+    # Try to generate a fresh token
+    if [ -f "scripts/get-firebase-id-token.mjs" ] && [ -n "$USER_ID" ]; then
+        FRESH_TOKEN=$(node scripts/get-firebase-id-token.mjs "$USER_ID" 2>/dev/null | tail -1)
+        if [[ "$FRESH_TOKEN" == eyJ* ]]; then
+            FIREBASE_TOKEN="$FRESH_TOKEN"
+            LOGIN_RESPONSE=$(make_request POST "/api/auth/login" '{"idToken":"'$FIREBASE_TOKEN'"}' false)
+            if echo "$LOGIN_RESPONSE" | grep -q "User logged in successfully"; then
+                echo -e "${GREEN}✓ Login successful with fresh token${NC}"
+            else
+                echo -e "${RED}✗ Login still failed with fresh token${NC}"
+            fi
+        fi
+    fi
 else
-    echo -e "${RED}✗ Login failed - token may be expired or invalid${NC}"
+    echo -e "${RED}✗ Login failed - Unknown error${NC}"
 fi
 echo ""
 

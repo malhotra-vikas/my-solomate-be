@@ -45,15 +45,15 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // 🧪 Get ID Token
-async function getFirebaseIdToken(uid = 'E42GzLK4m8a7koJbwYMJuqF9agJ3') {
+export async function getFirebaseIdToken(uid = 'E42GzLK4m8a7koJbwYMJuqF9agJ3') {
     try {
         const customToken = await admin.auth().createCustomToken(uid);
-        console.log(`🔐 Created custom token for UID: ${uid}`);
+        console.error(`🔐 Created custom token for UID: ${uid}`);
 
         const userCredential = await signInWithCustomToken(auth, customToken);
         const idToken = await userCredential.user.getIdToken();
 
-        console.log('\n✅ Firebase ID Token:');
+        // Only output the token to stdout, log everything else to stderr
         console.log(idToken);
         return idToken;
     } catch (err) {
@@ -62,4 +62,8 @@ async function getFirebaseIdToken(uid = 'E42GzLK4m8a7koJbwYMJuqF9agJ3') {
     }
 }
 
-getFirebaseIdToken();
+// If called directly (not imported), run with command line args
+if (import.meta.url === `file://${process.argv[1]}`) {
+    const uid = process.argv[2] || 'E42GzLK4m8a7koJbwYMJuqF9agJ3';
+    getFirebaseIdToken(uid);
+}
