@@ -44,16 +44,17 @@ if (!admin.apps.length) {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// 🧪 Get ID Token
-export async function getFirebaseIdToken(uid = 'E42GzLK4m8a7koJbwYMJuqF9agJ3') {
+export async function getFirebaseIdTokenByEmail(email) {
     try {
-        const customToken = await admin.auth().createCustomToken(uid);
-        console.error(`🔐 Created custom token for UID: ${uid}`);
+        const userRecord = await admin.auth().getUserByEmail(email);
+        console.error(`📥 UID for email ${email} is: ${userRecord.uid}`);
+
+        const customToken = await admin.auth().createCustomToken(userRecord.uid);
+        console.error(`🔐 Created custom token for UID: ${userRecord.uid}`);
 
         const userCredential = await signInWithCustomToken(auth, customToken);
         const idToken = await userCredential.user.getIdToken();
 
-        // Only output the token to stdout, log everything else to stderr
         console.log(idToken);
         return idToken;
     } catch (err) {
@@ -64,6 +65,11 @@ export async function getFirebaseIdToken(uid = 'E42GzLK4m8a7koJbwYMJuqF9agJ3') {
 
 // If called directly (not imported), run with command line args
 if (import.meta.url === `file://${process.argv[1]}`) {
-    const uid = process.argv[2] || 'E42GzLK4m8a7koJbwYMJuqF9agJ3';
-    getFirebaseIdToken(uid);
+    const email = process.argv[2];
+    if (!email) {
+        console.error("⚠️ Usage: node getFirebaseIdToken.ts <email>");
+        process.exit(1);
+    }
+    getFirebaseIdTokenByEmail(email);
+
 }

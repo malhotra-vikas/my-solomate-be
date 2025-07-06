@@ -14,6 +14,11 @@ export async function POST(req: NextRequest) {
       displayName: name,
     })
 
+    console.log("Sucessfully added user in Firebase for email ", email)
+    console.log("✅ Firebase UID:", userRecord.uid)
+
+    console.log("Creating user in Supabase with UID:", userRecord.uid)
+
     const supabase = createClient()
 
     // 2. Store user profile in Supabase
@@ -29,6 +34,8 @@ export async function POST(req: NextRequest) {
       })
       .select()
       .single()
+
+    console.log("🔁 Inserted into Supabase:", data, "Error:", error)
 
     if (error) {
       // If Supabase insertion fails, delete Firebase user to prevent orphaned accounts

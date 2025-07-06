@@ -67,7 +67,9 @@ echo "Response: $SIGNUP_RESPONSE"
 
 # Extract user ID and check if signup was successful
 if echo "$SIGNUP_RESPONSE" | grep -q "User signed up successfully"; then
-    USER_ID=$(extract_json_field "$SIGNUP_RESPONSE" "id")
+    USER_EMAIL=$(echo "$SIGNUP_RESPONSE" | grep -o '"email":"[^"]*"' | cut -d'"' -f4)
+    USER_ID=$(echo "$SIGNUP_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+
     echo -e "${GREEN}✓ Signup successful. User ID: $USER_ID${NC}"
 else
     echo -e "${RED}✗ Signup failed${NC}"
@@ -89,11 +91,13 @@ if [ -f "scripts/get-firebase-id-token.mjs" ]; then
     else
         echo -e "${YELLOW}⚠ Could not get Firebase token automatically. Generating new one...${NC}"
         # Generate a fresh token for the user we just created
-        if [ -n "$USER_ID" ]; then
-            echo "Generating token for user: $USER_ID"
+        if [ -n "$USER_EMAIL" ]; then
+            echo "Generating token for user: $USER_EMAIL"
+            #TOKEN_RESPONSE=$(node ./scripts/get-firebase-id-token.mjs "$USER_EMAIL" 2>/dev/null | tail -1)
+
             TOKEN_RESPONSE=$(node -e "
                 import('./scripts/get-firebase-id-token.mjs').then(async (module) => {
-                    const token = await module.getFirebaseIdToken('$USER_ID');
+                    const token = await module.getFirebaseIdTokenByEmail('$USER_EMAIL');
                     console.log(token);
                 }).catch(console.error);
             " 2>/dev/null | tail -1)

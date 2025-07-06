@@ -8,9 +8,12 @@ export async function POST(req: NextRequest) {
     const { idToken } = await req.json()
     const supabase = createClient()
 
+    
     // Verify Firebase ID token
     const decodedToken = await auth.verifyIdToken(idToken)
     const uid = decodedToken.uid
+
+    console.log("🔑 Login UID:", uid)
 
     // Fetch user profile from Supabase
     const { data: userProfile, error } = await supabase.from("users").select("*").eq("id", uid).single()
