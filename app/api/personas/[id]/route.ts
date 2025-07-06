@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import type { Persona, PersonaPersonality, PersonaVoiceSettings } from "@/types"
 import { auth } from "@/lib/firebaseAdmin"
+import type { UpdatePersonaRequest } from "@/types"
 
 // Helper to get user ID from Authorization header
 async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
@@ -19,78 +19,107 @@ async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
   }
 }
 
+// GET - Get a specific persona
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { id } = params
-
   try {
-    const { data: persona, error } = await supabase.from("personas").select("*").eq("id", id).single()
+    const { data: persona, error } = await supabase
+      .from("personas")
+      .select("*")
+      .eq("id", params.id)
+      .eq("is_active", true)
+      .single()
 
     if (error || !persona) {
-      console.error("Error fetching persona:", error)
+      console.error("Persona not found:", error)
       return NextResponse.json({ error: "Persona not found" }, { status: 404 })
     }
 
-    return NextResponse.json(persona as Persona, { status: 200 })
+    return NextResponse.json(persona, { status: 200 })
   } catch (error: any) {
-    console.error("GET persona by ID error:", error.message)
+    console.error("GET persona error:", error.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
+// PUT - Update a persona
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { id } = params
-
   try {
-    const updates = await req.json()
-    const updateData: Partial<Persona> = {}
+    const body: UpdatePersonaRequest = await req.json()
+    const { name, description, avatar_url, personality, voice_settings, system_prompt } = body
 
-    // Handle top-level fields
-    if (updates.name !== undefined) updateData.name = updates.name
-    if (updates.description !== undefined) updateData.description = updates.description
-    if (updates.avatar_url !== undefined) updateData.avatar_url = updates.avatar_url
-    if (updates.system_prompt !== undefined) updateData.initial_prompt = updates.system_prompt
+    // Build update object
+    const updates: any = {}
 
-    // Handle detailed personality config
-    if (updates.personality !== undefined) {
-      updateData.personality_config = updates.personality as PersonaPersonality
-      // Also update derived fields for backward compatibility
-      if (updates.personality.traits !== undefined) {
-        updateData.personality_traits = updates.personality.traits
-      }
-      if (updates.personality.speaking_style?.tone !== undefined) {
-        updateData.tone_description = updates.personality.speaking_style.tone
-      }
+    if (name) updates.name = name
+    if (description !== undefined) updates.description = description
+    if (avatar_url !== undefined) updates.avatar_url = avatar_url
+    if (system_prompt) updates.initial_prompt = system_prompt
+
+    // Handle personality config
+    if (personality) {
+      updates.personality_config = personality
+      updates.personality_traits = personality.traits || []
+      updates.tone_description = personality.speaking_style?.tone || ""
     }
 
-    // Handle detailed voice settings config
-    if (updates.voice_settings !== undefined) {
-      updateData.voice_config = updates.voice_settings as PersonaVoiceSettings
-      // Also update derived voice_id for backward compatibility
-      if (updates.voice_settings.elevenlabs_voice_id !== undefined) {
-        updateData.voice_id = updates.voice_settings.elevenlabs_voice_id
-      }
+    // Handle voice config
+    if (voice_settings) {
+      updates.voice_config = voice_settings
+      updates.voice_id = voice_settings.elevenlabs_voice_id
     }
 
-    const { data, error } = await supabase.from("personas").update(updateData).eq("id", id).select().single()
+    const { data: persona, error } = await supabase
+      .from("personas")
+      .update(updates)
+      .eq("id", params.id)
+      .select()
+      .single()
 
     if (error) {
       console.error("Error updating persona:", error)
       return NextResponse.json({ error: "Failed to update persona" }, { status: 500 })
     }
 
-    return NextResponse.json(data as Persona, { status: 200 })
+    return NextResponse.json(persona, { status: 200 })
   } catch (error: any) {
-    console.error("PUT persona by ID error:", error.message)
+    console.error("PUT persona error:", error.message)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+// DELETE - Soft delete a persona
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const userId = await getUserIdFromRequest(req)
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    const { data: persona, error } = await supabase
+      .from("personas")
+      .update({ is_active: false })
+      .eq("id", params.id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Error deleting persona:", error)
+      return NextResponse.json({ error: "Failed to delete persona" }, { status: 500 })
+    }
+
+    return NextResponse.json({ message: "Persona deleted successfully" }, { status: 200 })
+  } catch (error: any) {
+    console.error("DELETE persona error:", error.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

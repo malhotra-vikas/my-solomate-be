@@ -1,4 +1,4 @@
--- Function to find similar dialog examples
+-- Function to find similar dialog examples using vector similarity
 CREATE OR REPLACE FUNCTION find_similar_dialog_examples(
   persona_id UUID,
   query_embedding vector(1536),
@@ -19,17 +19,17 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT
-    pdb.id,
-    pdb.user_input,
-    pdb.expected_response,
-    pdb.context,
-    pdb.style_tags,
-    pdb.personality_tags,
-    1 - (pdb.embedding <=> query_embedding) as similarity
-  FROM persona_dialog_bank pdb
-  WHERE pdb.persona_id = find_similar_dialog_examples.persona_id
-    AND 1 - (pdb.embedding <=> query_embedding) > match_threshold
-  ORDER BY pdb.embedding <=> query_embedding
+    db.id,
+    db.user_input,
+    db.expected_response,
+    db.context,
+    db.style_tags,
+    db.personality_tags,
+    1 - (db.embedding <=> query_embedding) as similarity
+  FROM dialog_bank db
+  WHERE db.persona_id = find_similar_dialog_examples.persona_id
+    AND 1 - (db.embedding <=> query_embedding) > match_threshold
+  ORDER BY db.embedding <=> query_embedding
   LIMIT match_count;
 END;
 $$;

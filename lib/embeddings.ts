@@ -20,23 +20,28 @@ export async function findSimilarDialogExamples(
   limit = 3,
   threshold = 0.7,
 ): Promise<any[]> {
-  const { supabase } = await import("./supabase")
+  try {
+    const { supabase } = await import("./supabase")
 
-  // Generate embedding for user input
-  const inputEmbedding = await generateEmbedding(userInput)
+    // Generate embedding for user input
+    const embedding = await generateEmbedding(userInput)
 
-  // Find similar dialog examples using vector similarity
-  const { data, error } = await supabase.rpc("find_similar_dialog_examples", {
-    persona_id: personaId,
-    query_embedding: inputEmbedding,
-    match_threshold: threshold,
-    match_count: limit,
-  })
+    // Find similar examples using vector similarity
+    const { data, error } = await supabase.rpc("find_similar_dialog_examples", {
+      persona_id: personaId,
+      query_embedding: embedding,
+      match_threshold: threshold,
+      match_count: limit,
+    })
 
-  if (error) {
-    console.error("Error finding similar dialog examples:", error)
+    if (error) {
+      console.error("Error finding similar dialog examples:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Error in findSimilarDialogExamples:", error)
     return []
   }
-
-  return data || []
 }

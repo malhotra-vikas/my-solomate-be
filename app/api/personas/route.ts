@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import type { Persona, PersonaPersonality, PersonaVoiceSettings } from "@/types"
 import { auth } from "@/lib/firebaseAdmin"
+import type { CreatePersonaRequest } from "@/types"
 
 async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
   const authHeader = req.headers.get("Authorization")
@@ -37,14 +37,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch personas" }, { status: 500 })
     }
 
-    return NextResponse.json(personas as Persona[], { status: 200 })
+    return NextResponse.json(personas, { status: 200 })
   } catch (error: any) {
     console.error("GET personas error:", error.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-// POST - Create new persona
+// POST - Create a new persona
 export async function POST(req: NextRequest) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
@@ -52,10 +52,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const personaData = await req.json()
-
-    // Extract required fields
-    const { name, description = "", avatar_url = "", personality, voice_settings, system_prompt } = personaData
+    const body: CreatePersonaRequest = await req.json()
+    const { name, description, avatar_url, personality, voice_settings, system_prompt } = body
 
     if (!name || !personality || !voice_settings || !system_prompt) {
       return NextResponse.json(
@@ -64,28 +62,33 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Prepare data for insertion
-    const insertData = {
-      name,
-      description,
-      avatar_url,
-      personality_config: personality as PersonaPersonality,
-      voice_config: voice_settings as PersonaVoiceSettings,
-      initial_prompt: system_prompt,
-      // Derived fields for backward compatibility
-      personality_traits: personality.traits || [],
-      voice_id: voice_settings.elevenlabs_voice_id,
-      tone_description: personality.speaking_style?.tone || "",
-    }
+    // Extract backward-compatible fields
+    const personality_traits = personality.traits || []
+    const voice_id = voice_settings.elevenlabs_voice_id
+    const tone_description = personality.speaking_style?.tone || ""
 
-    const { data, error } = await supabase.from("personas").insert(insertData).select().single()
+    const { data: persona, error } = await supabase
+      .from("personas")
+      .insert({
+        name,
+        description: description || "",
+        personality_traits,
+        voice_id,
+        tone_description,
+        avatar_url: avatar_url || "/placeholder.svg?height=200&width=200",
+        initial_prompt: system_prompt,
+        personality_config: personality,
+        voice_config: voice_settings,
+      })
+      .select()
+      .single()
 
     if (error) {
       console.error("Error creating persona:", error)
       return NextResponse.json({ error: "Failed to create persona" }, { status: 500 })
     }
 
-    return NextResponse.json(data as Persona, { status: 201 })
+    return NextResponse.json(persona, { status: 201 })
   } catch (error: any) {
     console.error("POST persona error:", error.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

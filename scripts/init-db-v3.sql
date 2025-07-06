@@ -1,112 +1,96 @@
 -- Drop existing tables if they exist
-DROP TABLE IF EXISTS memories CASCADE;
+DROP TABLE IF EXISTS dialog_bank CASCADE;
 DROP TABLE IF EXISTS conversations CASCADE;
 DROP TABLE IF EXISTS user_personas CASCADE;
-DROP TABLE IF EXISTS subscriptions CASCADE;
 DROP TABLE IF EXISTS personas CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS persona_dialog_bank CASCADE;
 
--- Enable the vector extension for embeddings
+-- Enable vector extension
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- Users table
 CREATE TABLE users (
-  id TEXT PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  name TEXT,
-  photo_url TEXT,
-  preferences JSONB DEFAULT '{}',
-  current_tier TEXT DEFAULT 'free' CHECK (current_tier IN ('free', 'premium', 'silver')),
-  talk_time_minutes INTEGER DEFAULT 0,
-  talk_time_expires_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    id VARCHAR(255) PRIMARY KEY, -- Firebase UID
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    photo_url TEXT,
+    preferences JSONB DEFAULT '{}',
+    current_tier VARCHAR(50) DEFAULT 'free',
+    talk_time_minutes INTEGER DEFAULT 15,
+    talk_time_expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '24 hours'),
+    device_tokens TEXT[], -- Array of FCM device tokens
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Personas table with enhanced JSON config
+-- Personas table with enhanced personality and voice configuration
 CREATE TABLE personas (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  description TEXT,
-  personality_traits TEXT[] DEFAULT '{}',
-  voice_id TEXT,
-  tone_description TEXT,
-  avatar_url TEXT,
-  initial_prompt TEXT,
-  personality_config JSONB,
-  voice_config JSONB,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    personality_traits TEXT[], -- For backward compatibility
+    voice_id VARCHAR(255), -- For backward compatibility
+    tone_description TEXT, -- For backward compatibility
+    avatar_url TEXT,
+    initial_prompt TEXT NOT NULL,
+    personality_config JSONB, -- New detailed personality configuration
+    voice_config JSONB, -- New detailed voice configuration
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Dialog bank for persona training
-CREATE TABLE persona_dialog_bank (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  persona_id UUID REFERENCES personas(id) ON DELETE CASCADE,
-  user_input TEXT NOT NULL,
-  expected_response TEXT NOT NULL,
-  context TEXT,
-  style_tags TEXT[] DEFAULT '{}',
-  personality_tags TEXT[] DEFAULT '{}',
-  embedding vector(1536), -- OpenAI embedding dimension
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- User-Persona relationships
+-- User-Persona relationships (friends)
 CREATE TABLE user_personas (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-  persona_id UUID REFERENCES personas(id) ON DELETE CASCADE,
-  is_favorite BOOLEAN DEFAULT false,
-  last_interaction TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(user_id, persona_id)
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+    persona_id UUID REFERENCES personas(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, persona_id)
 );
 
 -- Conversations table
 CREATE TABLE conversations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-  persona_id UUID REFERENCES personas(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
-  content TEXT NOT NULL,
-  audio_url TEXT,
-  timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  is_short_term_memory BOOLEAN DEFAULT true,
-  is_long_term_memory_converted BOOLEAN DEFAULT false
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+    persona_id UUID REFERENCES personas(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    audio_url TEXT, -- For voice messages
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Long-term memories
-CREATE TABLE memories (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-  persona_id UUID REFERENCES personas(id) ON DELETE CASCADE,
-  summary TEXT NOT NULL,
-  embedding vector(1536),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Dialog bank for training personas
+CREATE TABLE dialog_bank (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    persona_id UUID REFERENCES personas(id) ON DELETE CASCADE,
+    user_input TEXT NOT NULL,
+    expected_response TEXT NOT NULL,
+    context TEXT,
+    style_tags TEXT[],
+    personality_tags TEXT[],
+    embedding vector(1536), -- OpenAI embedding dimension
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Subscriptions table
-CREATE TABLE subscriptions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-  tier TEXT NOT NULL CHECK (tier IN ('premium', 'silver', 'add_on')),
-  stripe_subscription_id TEXT,
-  start_date TIMESTAMP WITH TIME ZONE NOT NULL,
-  end_date TIMESTAMP WITH TIME ZONE,
-  minutes_purchased INTEGER,
-  minutes_remaining INTEGER,
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'expired')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Indexes for performance
+-- Indexes for better performance
+CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_conversations_user_persona ON conversations(user_id, persona_id);
 CREATE INDEX idx_conversations_timestamp ON conversations(timestamp);
-CREATE INDEX idx_memories_user_persona ON memories(user_id, persona_id);
-CREATE INDEX idx_persona_dialog_bank_persona ON persona_dialog_bank(persona_id);
-CREATE INDEX idx_persona_dialog_bank_embedding ON persona_dialog_bank USING ivfflat (embedding vector_cosine_ops);
-CREATE INDEX idx_memories_embedding ON memories USING ivfflat (embedding vector_cosine_ops);
+CREATE INDEX idx_user_personas_user_id ON user_personas(user_id);
+CREATE INDEX idx_dialog_bank_persona_id ON dialog_bank(persona_id);
+CREATE INDEX idx_dialog_bank_embedding ON dialog_bank USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+-- Update timestamp triggers
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_personas_updated_at BEFORE UPDATE ON personas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_dialog_bank_updated_at BEFORE UPDATE ON dialog_bank FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

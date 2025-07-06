@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { auth } from "@/lib/firebaseAdmin"
 import { generateEmbedding } from "@/lib/embeddings"
-import type { PersonaDialogExample } from "@/types"
+import type { CreateDialogExampleRequest } from "@/types"
 
 async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
   const authHeader = req.headers.get("Authorization")
@@ -26,92 +26,113 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { id: personaId } = params
-  const { searchParams } = new URL(req.url)
-  const limit = Number.parseInt(searchParams.get("limit") || "10")
-  const offset = Number.parseInt(searchParams.get("offset") || "0")
-
   try {
-    const { data, error } = await supabase
-      .from("persona_dialog_bank")
+    const personaId = params.id
+
+    // Verify persona exists
+    const { data: persona, error: personaError } = await supabase
+      .from("personas")
+      .select("id")
+      .eq("id", personaId)
+      .single()
+
+    if (personaError || !persona) {
+      return NextResponse.json({ error: "Persona not found" }, { status: 404 })
+    }
+
+    // Get dialog examples
+    const { data: examples, error } = await supabase
+      .from("dialog_bank")
       .select("*")
       .eq("persona_id", personaId)
       .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1)
 
     if (error) {
       console.error("Error fetching dialog examples:", error)
       return NextResponse.json({ error: "Failed to fetch dialog examples" }, { status: 500 })
     }
 
-    return NextResponse.json(data as PersonaDialogExample[], { status: 200 })
+    return NextResponse.json(examples, { status: 200 })
   } catch (error: any) {
     console.error("GET dialog bank error:", error.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-// POST - Add new dialog example
+// POST - Add a new dialog example
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { id: personaId } = params
-
   try {
-    const { user_input, expected_response, context, style_tags = [], personality_tags = [] } = await req.json()
+    const personaId = params.id
+    const body: CreateDialogExampleRequest = await req.json()
+
+    const { user_input, expected_response, context, style_tags, personality_tags } = body
 
     if (!user_input || !expected_response) {
       return NextResponse.json({ error: "user_input and expected_response are required" }, { status: 400 })
     }
 
+    // Verify persona exists
+    const { data: persona, error: personaError } = await supabase
+      .from("personas")
+      .select("id")
+      .eq("id", personaId)
+      .single()
+
+    if (personaError || !persona) {
+      return NextResponse.json({ error: "Persona not found" }, { status: 404 })
+    }
+
     // Generate embedding for the user input
     const embedding = await generateEmbedding(user_input)
 
-    const { data, error } = await supabase
-      .from("persona_dialog_bank")
+    // Insert dialog example
+    const { data: example, error } = await supabase
+      .from("dialog_bank")
       .insert({
         persona_id: personaId,
         user_input,
         expected_response,
         context,
-        style_tags,
-        personality_tags,
+        style_tags: style_tags || [],
+        personality_tags: personality_tags || [],
         embedding,
       })
       .select()
       .single()
 
     if (error) {
-      console.error("Error adding dialog example:", error)
-      return NextResponse.json({ error: "Failed to add dialog example" }, { status: 500 })
+      console.error("Error creating dialog example:", error)
+      return NextResponse.json({ error: "Failed to create dialog example" }, { status: 500 })
     }
 
-    return NextResponse.json(data as PersonaDialogExample, { status: 201 })
+    return NextResponse.json(example, { status: 201 })
   } catch (error: any) {
     console.error("POST dialog bank error:", error.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-// DELETE - Remove dialog example
+// DELETE - Remove a dialog example
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { searchParams } = new URL(req.url)
-  const exampleId = searchParams.get("example_id")
-
-  if (!exampleId) {
-    return NextResponse.json({ error: "example_id is required" }, { status: 400 })
-  }
-
   try {
-    const { error } = await supabase.from("persona_dialog_bank").delete().eq("id", exampleId)
+    const { searchParams } = new URL(req.url)
+    const exampleId = searchParams.get("exampleId")
+
+    if (!exampleId) {
+      return NextResponse.json({ error: "exampleId is required" }, { status: 400 })
+    }
+
+    const { error } = await supabase.from("dialog_bank").delete().eq("id", exampleId).eq("persona_id", params.id)
 
     if (error) {
       console.error("Error deleting dialog example:", error)

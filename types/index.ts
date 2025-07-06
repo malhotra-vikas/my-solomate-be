@@ -1,15 +1,18 @@
-export type UserProfile = {
+export interface UserProfile {
   id: string
   email: string
-  name?: string
+  name: string
   photo_url?: string
-  preferences?: Record<string, any>
-  current_tier: string
+  preferences: Record<string, any>
+  current_tier: "free" | "premium" | "enterprise"
   talk_time_minutes: number
-  talk_time_expires_at?: string
+  talk_time_expires_at: string
+  device_tokens?: string[]
+  created_at: string
+  updated_at: string
 }
 
-export type PersonaPersonality = {
+export interface PersonalityConfig {
   traits: string[]
   speaking_style: {
     tone: string
@@ -25,7 +28,7 @@ export type PersonaPersonality = {
   conversation_rules: string[]
 }
 
-export type PersonaVoiceSettings = {
+export interface VoiceConfig {
   elevenlabs_voice_id: string
   stability: number
   similarity_boost: number
@@ -33,20 +36,33 @@ export type PersonaVoiceSettings = {
   use_speaker_boost: boolean
 }
 
-export type Persona = {
+export interface Persona {
   id: string
   name: string
   description: string
-  personality_traits: string[]
-  voice_id: string
-  tone_description: string
+  personality_traits: string[] // For backward compatibility
+  voice_id: string // For backward compatibility
+  tone_description: string // For backward compatibility
   avatar_url: string
   initial_prompt: string
-  personality_config: PersonaPersonality
-  voice_config: PersonaVoiceSettings
+  personality_config?: PersonalityConfig // New detailed config
+  voice_config?: VoiceConfig // New detailed config
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }
 
-export type PersonaDialogExample = {
+export interface Conversation {
+  id: string
+  user_id: string
+  persona_id: string
+  role: "user" | "assistant"
+  content: string
+  audio_url?: string
+  timestamp: string
+}
+
+export interface DialogExample {
   id: string
   persona_id: string
   user_input: string
@@ -59,35 +75,28 @@ export type PersonaDialogExample = {
   updated_at: string
 }
 
-export type ConversationMessage = {
-  id: string
-  user_id: string
-  persona_id: string
-  role: "user" | "assistant"
-  content: string
-  audio_url?: string
-  timestamp: string
-  is_short_term_memory: boolean
-  is_long_term_memory_converted: boolean
+export interface CreatePersonaRequest {
+  name: string
+  description: string
+  avatar_url?: string
+  personality: PersonalityConfig
+  voice_settings: VoiceConfig
+  system_prompt: string
 }
 
-export type Memory = {
-  id: string
-  user_id: string
-  persona_id: string
-  summary: string
-  embedding: number[]
-  created_at: string
+export interface UpdatePersonaRequest {
+  name?: string
+  description?: string
+  avatar_url?: string
+  personality?: PersonalityConfig
+  voice_settings?: VoiceConfig
+  system_prompt?: string
 }
 
-export type Subscription = {
-  id: string
-  user_id: string
-  tier: "premium" | "silver" | "add_on"
-  stripe_subscription_id?: string
-  start_date: string
-  end_date?: string
-  minutes_purchased?: number
-  minutes_remaining?: number
-  status: "active" | "cancelled" | "expired"
+export interface CreateDialogExampleRequest {
+  user_input: string
+  expected_response: string
+  context?: string
+  style_tags: string[]
+  personality_tags: string[]
 }
