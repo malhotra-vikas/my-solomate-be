@@ -8,7 +8,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-BASE_URL="http://localhost:3002"
+BASE_URL="http://localhost:3000"
 FIREBASE_TOKEN="" # Will be set after signup
 USER_ID="" # Will be set after signup
 PERSONA_ID="" # Will be set after getting personas
