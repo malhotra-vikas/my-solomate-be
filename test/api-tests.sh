@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Load .env into current shell environment
+set -a
+source "$(dirname "$0")/../.env.local"
+set +a
+
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -8,9 +14,11 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-#BASE_URL="http://localhost:3000"
+BASE_URL=$NEXT_PUBLIC_APP_URL
+#BASE_URL=http://75.101.205.200:3000 
 
-BASE_URL=http://75.101.205.200:3000 
+echo "Testing for Back End Hosted at : $BASE_URL"
+
 FIREBASE_TOKEN="" # Will be set after signup
 USER_ID="" # Will be set after signup
 PERSONA_ID="" # Will be set after getting personas
