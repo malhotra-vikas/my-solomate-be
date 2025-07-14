@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "solomate",
+      name: "mySoloMate-Backend",
       script: "npm",
       args: "start",
       env: {
