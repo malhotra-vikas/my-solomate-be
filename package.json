@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "predev": "npm run build",
+    "prestart": "npm run build",
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
