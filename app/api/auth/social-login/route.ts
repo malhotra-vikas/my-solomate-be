@@ -6,6 +6,7 @@ export async function POST(req: NextRequest) {
   try {
     const { email, name, id, photoUrl } = await req.json();
 
+    console.log("🚀 ~ POST ~ email, name, id, photoUrl:", email, name, id, photoUrl)
     const supabase = createClient();
 
     const { data: existData, error: existDataError } = await supabase
