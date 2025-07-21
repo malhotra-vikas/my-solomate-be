@@ -17,6 +17,8 @@ CREATE TABLE users (
     name VARCHAR(255) NOT NULL,
     photo_url TEXT,
     preferences JSONB DEFAULT '{}',
+    birth_date DATE,
+    gender VARCHAR(50) CHECK (gender IN ('male', 'female', 'other')),
     current_tier VARCHAR(50) DEFAULT 'free' CHECK (current_tier IN ('free', 'premium', 'silver')),
     talk_time_minutes INTEGER DEFAULT 15,
     talk_time_expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '24 hours'),
