@@ -2,51 +2,46 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { auth } from "@/lib/firebaseAdmin"
 import type { UpdatePersonaRequest } from "@/types"
+import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 
-// Helper to get user ID from Authorization header
-async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
-  const authHeader = req.headers.get("Authorization")
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return null
-  }
-  const idToken = authHeader.split(" ")[1]
-  try {
-    const decodedToken = await auth.verifyIdToken(idToken)
-    return decodedToken.uid
-  } catch (error) {
-    console.error("Error verifying ID token:", error)
-    return null
-  }
-}
-
-// GET - Get a specific persona
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const userId = await getUserIdFromRequest(req)
-  if (!userId) {
+// GET - Unified handler to support multiple persona queries
+export async function GET(req: NextRequest, { params }: { params?: { id?: string } }) {
+  const currentUserId = await getUserIdFromRequest(req)
+  if (!currentUserId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const supabase = createClient()
+  const { searchParams } = new URL(req.url)
+
+  const personaId = params?.id
+
+  console.log("personaId got passed as  , ", personaId)
+
   try {
-    const supabase = createClient()
+    if (personaId) {
+      // ✅ 1. Get a specific persona by ID
+      const { data: persona, error } = await supabase
+        .from("personas")
+        .select("*")
+        .eq("id", personaId)
+        .eq("is_active", true)
+        .single()
 
-    const { data: persona, error } = await supabase
-      .from("personas")
-      .select("*")
-      .eq("id", params.id)
-      .eq("is_active", true)
-      .single()
+      if (error || !persona) {
+        console.error("Persona not found:", error)
+        return NextResponse.json({ error: "Persona not found" }, { status: 404 })
+      }
 
-    if (error || !persona) {
-      console.error("Persona not found:", error)
-      return NextResponse.json({ error: "Persona not found" }, { status: 404 })
+      return NextResponse.json(persona, { status: 200 })
     }
 
-    return NextResponse.json(persona, { status: 200 })
   } catch (error: any) {
     console.error("GET persona error:", error.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
 
 // PUT - Update a persona
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {

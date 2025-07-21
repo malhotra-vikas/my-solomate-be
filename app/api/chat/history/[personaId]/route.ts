@@ -2,22 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { auth } from "@/lib/firebaseAdmin"
 import type { Conversation } from "@/types"
-
-// Helper to get user ID from Authorization header
-async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
-  const authHeader = req.headers.get("Authorization")
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return null
-  }
-  const idToken = authHeader.split(" ")[1]
-  try {
-    const decodedToken = await auth.verifyIdToken(idToken)
-    return decodedToken.uid
-  } catch (error) {
-    console.error("Error verifying ID token:", error)
-    return null
-  }
-}
+import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 
 export async function GET(req: NextRequest, { params }: { params: { personaId: string } }) {
   const userId = await getUserIdFromRequest(req)

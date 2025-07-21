@@ -2,48 +2,89 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { auth } from "@/lib/firebaseAdmin"
 import type { CreatePersonaRequest } from "@/types"
+import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 
-async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
-  const authHeader = req.headers.get("Authorization")
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return null
-  }
-  const idToken = authHeader.split(" ")[1]
-  try {
-    const decodedToken = await auth.verifyIdToken(idToken)
-    return decodedToken.uid
-  } catch (error) {
-    console.error("Error verifying ID token:", error)
-    return null
-  }
-}
-
-// GET - List all personas
-export async function GET(req: NextRequest) {
-  const userId = await getUserIdFromRequest(req)
-  if (!userId) {
+// GET - Unified handler to support multiple persona queries
+export async function GET(req: NextRequest, { params }: { params?: { id?: string } }) {
+  const currentUserId = await getUserIdFromRequest(req)
+  if (!currentUserId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
   const supabase = createClient()
+  const { searchParams } = new URL(req.url)
+
+  const personaId = params?.id
+  let getAll = false
+  if (searchParams.get("all")) {
+    getAll = true
+  }
+  const queryUserId = searchParams.get("user_id");
+
+  console.log("personaId got passed as  , ", personaId)
+  console.log("getAll got passed as  , ", getAll)
+  console.log("queryUserId got passed as  , ", queryUserId)
 
   try {
-    const { data: personas, error } = await supabase
-      .from("personas")
-      .select("*")
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
+    if (personaId) {
+      // ✅ 1. Get a specific persona by ID
+      const { data: persona, error } = await supabase
+        .from("personas")
+        .select("*")
+        .eq("id", personaId)
+        .eq("is_active", true)
+        .single()
 
-    if (error) {
-      console.error("Error fetching personas:", error)
-      return NextResponse.json({ error: "Failed to fetch personas" }, { status: 500 })
+      if (error || !persona) {
+        console.error("Persona not found:", error)
+        return NextResponse.json({ error: "Persona not found" }, { status: 404 })
+      }
+
+      return NextResponse.json(persona, { status: 200 })
     }
 
-    return NextResponse.json(personas, { status: 200 })
+    if (getAll) {
+      // ✅ 4. Get all personas in the database
+      const { data: personas, error } = await supabase
+        .from("personas")
+        .select("*")
+
+      if (error) {
+        console.error("Error fetching all personas:", error)
+        return NextResponse.json({ error: "Failed to fetch all personas" }, { status: 500 })
+      }
+
+      return NextResponse.json(personas, { status: 200 })
+    }
+
+    if (queryUserId && queryUserId !== "undefined" && queryUserId !== "null" && queryUserId.trim() !== "") {
+      // ✅ 3. Get all personas for a given user_id
+
+      const { data: userPersonaRows, error } = await supabase
+        .from("user_personas")
+        .select("persona:personas(*)")
+        .eq("user_id", queryUserId)
+
+      if (error) {
+        console.error("Error fetching personas for user_id:", error)
+        return NextResponse.json({ error: "Failed to fetch personas" }, { status: 500 })
+      }
+      console.log("userPersonaRows", userPersonaRows)
+
+      // Return all joined personas, including inactive
+      const personas = (userPersonaRows ?? []).map(row => row.persona)
+
+      console.log("Personas for User being returned are ", personas)
+
+      return NextResponse.json(personas, { status: 200 })
+    }
+
   } catch (error: any) {
-    console.error("GET personas error:", error.message)
+    console.error("GET persona error:", error.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
 
 // POST - Create a new persona
 export async function POST(req: NextRequest) {
