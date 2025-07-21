@@ -28,3 +28,4 @@ next-env.d.ts
 
 # Secrets
 secrets/mysolomate-firebase-adminsdk.json
+package-lock.json
