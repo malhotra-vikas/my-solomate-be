@@ -351,6 +351,24 @@ if [ -n "$USER_ID" ] && [ -n "$PERSONA_ID" ]; then
     echo ""
 fi
 
+# Test 13: Report An Issue
+if [ -n "$USER_ID" ] && [ -n "$PERSONA_ID" ]; then
+    echo -e "${BLUE}11. Testing Report An Issue${NC}"
+    REPORT_RESPONSE=$(make_request POST "/api/report-issue" '{
+        "subject": "Voice Issue",
+        "userEmail": "loggedinuser@test.com",
+        "message": "When I try to talk to the bot, I don’t hear any response."
+    }')
+    echo "Response: $REPORT_RESPONSE"
+
+    if echo "$REPORT_RESPONSE" | grep -qi "Reported"; then
+        echo -e "${GREEN}✓ Issue Reported successfully${NC}"
+    else
+        echo -e "${RED}✗ Failed to Send Issue email${NC}"
+    fi
+    echo ""
+fi
+
 echo -e "${GREEN}=== API Tests Complete ===${NC}"
 echo ""
 echo -e "${YELLOW}Summary:${NC}"
