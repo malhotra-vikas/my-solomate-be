@@ -58,7 +58,7 @@ export async function PUT(req: Request) {
         }
 
         const formData = await req.formData();
-        const photoUrlInput = formData.get('photo_url') as string | File | null;
+        const photoUrlInput = formData.get('file') as string | File | null;
 
         console.log("FormData entries:");
         for (const [key, value] of formData.entries()) {
@@ -67,7 +67,7 @@ export async function PUT(req: Request) {
 
         const updates: Record<string, any> = {};
         formData.forEach((value, key) => {
-            if (key !== 'photo_url') {
+            if (key !== 'file') {
                 updates[key] = value;
             }
         });
