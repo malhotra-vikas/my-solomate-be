@@ -16,7 +16,7 @@ export interface Subscriptions {
   stripe_subscription_id?: string | null
   subscription_start_date: string // ISO timestamp
   subscription_end_date?: string | null
-  talk_minutes_remaining?: number | null
+  talk_seconds_remaining?: number | null
   status?: 'active' | 'cancelled' | 'expired'
   created_at?: string
 }
