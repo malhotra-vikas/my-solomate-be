@@ -101,6 +101,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  const { id } = params;
 
   try {
     const supabase = createClient()
@@ -108,7 +109,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     const { data: persona, error } = await supabase
       .from("personas")
       .update({ is_active: false })
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single()
 
