@@ -52,6 +52,7 @@
     "embla-carousel-react": "latest",
     "firebase": "latest",
     "firebase-admin": "latest",
+    "get-audio-duration": "^4.0.1",
     "google-auth-library": "^10.1.0",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
