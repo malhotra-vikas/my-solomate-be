@@ -26,8 +26,8 @@ export async function GET(req: NextRequest, { params }: { params?: { id?: string
   console.log("queryUserId got passed as  , ", queryUserId)
 
   try {
+    // ✅ 1. Get a specific persona by ID
     if (personaId) {
-      // ✅ 1. Get a specific persona by ID
       const { data: persona, error } = await supabase
         .from("personas")
         .select("*")
@@ -43,22 +43,32 @@ export async function GET(req: NextRequest, { params }: { params?: { id?: string
       return NextResponse.json(persona, { status: 200 })
     }
 
+    // ✅ 2. Get all personas EXCLUDING those already attached to currentUserId (Find Solo Mates)
     if (getAll) {
-      // ✅ 4. Get all personas in the database
-      const { data: personas, error } = await supabase
-        .from("personas")
-        .select("*")
+      const [allPersonaRes, userPersonaRes] = await Promise.all([
+        supabase.from("personas").select("*"),
+        supabase
+          .from("user_personas")
+          .select("persona_id")
+          .eq("user_id", currentUserId),
+      ])
 
-      if (error) {
-        console.error("Error fetching all personas:", error)
-        return NextResponse.json({ error: "Failed to fetch all personas" }, { status: 500 })
+      const { data: allPersonas, error: allError } = allPersonaRes
+      const { data: userPersonas, error: userError } = userPersonaRes
+
+      if (allError || userError) {
+        console.error("Error fetching all/user personas:", allError || userError)
+        return NextResponse.json({ error: "Failed to fetch personas" }, { status: 500 })
       }
 
-      return NextResponse.json(personas, { status: 200 })
+      const attachedPersonaIds = new Set(userPersonas.map(p => p.persona_id))
+      const unlinkedPersonas = allPersonas.filter(p => !attachedPersonaIds.has(p.id))
+
+      return NextResponse.json(unlinkedPersonas, { status: 200 })
     }
 
+    // ✅ 3. Get all attached personas for a given user_id (My Solo Mates)
     if (queryUserId && queryUserId !== "undefined" && queryUserId !== "null" && queryUserId.trim() !== "") {
-      // ✅ 3. Get all personas for a given user_id
 
       const { data: userPersonaRows, error } = await supabase
         .from("user_personas")
