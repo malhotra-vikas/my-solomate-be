@@ -33,11 +33,6 @@ export async function POST(req: NextRequest) {
         email: email,
         name: name,
         photo_url: photoUrl,
-        current_tier: "free",
-        talk_time_minutes: 15, // Free tier daily minutes
-        talk_time_expires_at: new Date(
-          Date.now() + 24 * 60 * 60 * 1000
-        ).toISOString(), // Expires in 24 hours
       })
       .select()
       .single();
@@ -53,6 +48,18 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    // 3. Store user subscription in Supabase
+    const { data: subData, error: subError } = await supabase
+      .from("subscriptions")
+      .insert({
+        user_id: id,
+      })
+      .select()
+      .single()
+
+    console.log("🔁 Inserted into Supabase Subscriptions:", subData, "Error:", subError)
+
 
     return NextResponse.json(
       {
