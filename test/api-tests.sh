@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Load .env into current shell environment
+set -a
+source "$(dirname "$0")/../.env.local"
+set +a
+
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -8,10 +14,14 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-BASE_URL="http://localhost:3000"
+BASE_URL=$NEXT_PUBLIC_APP_URL
+#BASE_URL=http://75.101.205.200:3000 
+
+echo "Testing for Back End Hosted at : $BASE_URL"
+
 FIREBASE_TOKEN="" # Will be set after signup
 USER_ID="" # Will be set after signup
-PERSONA_ID="" # Will be set after getting personas
+PERSONA_ID="402365ef-a90e-4098-9355-c9fbe2c72d72"
 
 echo -e "${YELLOW}=== mySOLO Mate BE API Tests ===${NC}"
 echo "Base URL: $BASE_URL"
@@ -23,6 +33,8 @@ make_request() {
     local endpoint=$2
     local data=$3
     local use_auth=${4:-true}
+    
+    echo -e "\n🔍 Request: $method $BASE_URL$endpoint"
     
     if [ "$use_auth" = true ] && [ -n "$FIREBASE_TOKEN" ]; then
         if [ -n "$data" ]; then
@@ -149,6 +161,13 @@ else
 fi
 echo ""
 
+# Extract user_id for follow-up tests
+USER_ID=$(echo "$LOGIN_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+echo "PERSONA SELECTED : $PERSONA_ID"
+echo "USER ID SELECTED : $USER_ID"
+
+
 # Test 4: Get User Profile
 echo -e "${BLUE}4. Testing Get User Profile${NC}"
 PROFILE_RESPONSE=$(make_request GET "/api/auth/profile")
@@ -159,21 +178,48 @@ if echo "$PROFILE_RESPONSE" | grep -q "email"; then
 else
     echo -e "${RED}✗ Failed to get profile${NC}"
 fi
-echo ""
+
+echo ""# Test 11: Attach Persona to User
+if [ -n "$USER_ID" ] && [ -n "$PERSONA_ID" ]; then
+    echo -e "${BLUE}11. Testing Attach Persona to User${NC}"
+    ATTACH_RESPONSE=$(make_request POST "/api/auth/user/attach-persona" '{
+        "persona_id": "'$PERSONA_ID'"
+    }')
+    echo "Response: $ATTACH_RESPONSE"
+
+    if echo "$ATTACH_RESPONSE" | grep -qi "attached"; then
+        echo -e "${GREEN}✓ Persona attached successfully${NC}"
+    else
+        echo -e "${RED}✗ Failed to attach persona${NC}"
+    fi
+    echo ""
+fi
 
 # Test 5: List Personas
 echo -e "${BLUE}5. Testing List Personas${NC}"
-PERSONAS_RESPONSE=$(make_request GET "/api/personas")
-echo "Response: $PERSONAS_RESPONSE"
 
-# Extract first persona ID for testing
-PERSONA_ID=$(echo "$PERSONAS_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+# 5.1 - Get persona by ID
 if [ -n "$PERSONA_ID" ]; then
-    echo -e "${GREEN}✓ Personas listed successfully. Using persona ID: $PERSONA_ID${NC}"
-else
-    echo -e "${YELLOW}⚠ No personas found, will create one${NC}"
+    echo -e "${BLUE}→ 5.2 Get persona by ID ($PERSONA_ID)${NC}"
+    SINGLE_RESPONSE=$(make_request GET "/api/personas/$PERSONA_ID")
+    echo "Response: $SINGLE_RESPONSE"
+    echo ""
 fi
+
+# 5.2 - Get personas by user_id
+if [ -n "$USER_ID" ]; then
+    echo -e "${BLUE}→ 5.3 Get personas by user_id ($USER_ID)${NC}"
+    BY_USER_RESPONSE=$(make_request GET "/api/personas?user_id=$USER_ID")
+    echo "Response: $BY_USER_RESPONSE"
+    echo ""
+fi
+
+# 5.3 - Get all personas in the database (admin-like)
+echo -e "${BLUE}→ 5.4 Get all personas in the database (?all=true)${NC}"
+ALL_PERSONAS_RESPONSE=$(make_request GET "/api/personas?all=true")
+echo "Response: $ALL_PERSONAS_RESPONSE"
 echo ""
+
 
 # Test 6: Create New Persona (if none found)
 if [ -z "$PERSONA_ID" ]; then
@@ -231,7 +277,7 @@ if [ -n "$PERSONA_ID" ]; then
         "style_tags": ["friendly", "welcoming"],
         "personality_tags": ["helpful", "positive"]
     }')
-    echo "Response: $ADD_DIALOG_RESPONSE"
+    #echo "Response: $ADD_DIALOG_RESPONSE"
     
     if echo "$ADD_DIALOG_RESPONSE" | grep -q "user_input"; then
         echo -e "${GREEN}✓ Dialog example added successfully${NC}"
@@ -245,7 +291,7 @@ fi
 if [ -n "$PERSONA_ID" ]; then
     echo -e "${BLUE}8. Testing Get Dialog Bank Examples${NC}"
     GET_DIALOG_RESPONSE=$(make_request GET "/api/personas/$PERSONA_ID/dialog-bank")
-    echo "Response: $GET_DIALOG_RESPONSE"
+   # echo "Response: $GET_DIALOG_RESPONSE"
     
     if echo "$GET_DIALOG_RESPONSE" | grep -q "user_input"; then
         echo -e "${GREEN}✓ Dialog examples retrieved successfully${NC}"
@@ -282,6 +328,43 @@ if [ -n "$PERSONA_ID" ]; then
         echo -e "${GREEN}✓ Chat history retrieved successfully${NC}"
     else
         echo -e "${YELLOW}⚠ No chat history found (this is normal for new conversations)${NC}"
+    fi
+    echo ""
+fi
+
+echo -e "${YELLOW}⏸️ Pausing for 10 seconds...${NC}"
+sleep 30
+
+# Test 12: Detach Persona to User
+if [ -n "$USER_ID" ] && [ -n "$PERSONA_ID" ]; then
+    echo -e "${BLUE}11. Testing Detach Persona to User${NC}"
+    ATTACH_RESPONSE=$(make_request POST "/api/auth/user/detach-persona" '{
+        "persona_id": "'$PERSONA_ID'"
+    }')
+    echo "Response: $ATTACH_RESPONSE"
+
+    if echo "$ATTACH_RESPONSE" | grep -qi "detached"; then
+        echo -e "${GREEN}✓ Persona detached successfully${NC}"
+    else
+        echo -e "${RED}✗ Failed to detach persona${NC}"
+    fi
+    echo ""
+fi
+
+# Test 13: Report An Issue
+if [ -n "$USER_ID" ] && [ -n "$PERSONA_ID" ]; then
+    echo -e "${BLUE}11. Testing Report An Issue${NC}"
+    REPORT_RESPONSE=$(make_request POST "/api/report-issue" '{
+        "subject": "Voice Issue",
+        "userEmail": "loggedinuser@test.com",
+        "message": "When I try to talk to the bot, I don’t hear any response."
+    }')
+    echo "Response: $REPORT_RESPONSE"
+
+    if echo "$REPORT_RESPONSE" | grep -qi "Reported"; then
+        echo -e "${GREEN}✓ Issue Reported successfully${NC}"
+    else
+        echo -e "${RED}✗ Failed to Send Issue email${NC}"
     fi
     echo ""
 fi

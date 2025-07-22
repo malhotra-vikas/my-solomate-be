@@ -1,27 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
 import { auth } from "@/lib/firebaseAdmin"
+import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 // import Stripe from 'stripe' // Uncomment if you install stripe
 
 // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 //   apiVersion: '2024-04-10', // Use your desired API version
 // });
-
-// Helper to get user ID from Authorization header
-async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
-  const authHeader = req.headers.get("Authorization")
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return null
-  }
-  const idToken = authHeader.split(" ")[1]
-  try {
-    const decodedToken = await auth.verifyIdToken(idToken)
-    return decodedToken.uid
-  } catch (error) {
-    console.error("Error verifying ID token:", error)
-    return null
-  }
-}
 
 export async function POST(req: NextRequest) {
   const userId = await getUserIdFromRequest(req)
