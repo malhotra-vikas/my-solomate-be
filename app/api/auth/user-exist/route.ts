@@ -11,9 +11,8 @@ export async function POST(req: NextRequest) {
 
     if (error || !userProfile) {
         console.error("User profile not found in Supabase:", error)
-        return NextResponse.json({ error: "User profile not found" }, { status: 404 })
-      }
-
+        return NextResponse.json({ error: "User profile not found" }, { status: 201 })
+     }
       
       return NextResponse.json(
         {
