@@ -17,23 +17,6 @@ export async function POST(req: NextRequest) {
   try {
     const { tier, minutes, priceId } = await req.json() // priceId for Stripe
 
-    // This is a simplified example. In a real app, you'd create a Stripe Checkout Session.
-    // const session = await stripe.checkout.sessions.create({
-    //   payment_method_types: ['card'],
-    //   line_items: [{
-    //     price: priceId, // Stripe Price ID for the product/tier
-    //     quantity: 1,
-    //   }],
-    //   mode: tier === 'add_on' ? 'payment' : 'subscription',
-    //   success_url: `${req.nextUrl.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-    //   cancel_url: `${req.nextUrl.origin}/cancel`,
-    //   client_reference_id: userId, // Link to your user
-    //   metadata: {
-    //     tier: tier,
-    //     minutes: minutes,
-    //   },
-    // });
-
     // For now, simulate direct update (REMOVE IN PRODUCTION)
     const updateData: any = { current_tier: tier }
     const subscriptionData: any = { user_id: userId, tier: tier, status: "active" }
