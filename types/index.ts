@@ -4,13 +4,23 @@ export interface UserProfile {
   name: string
   photo_url?: string
   preferences: Record<string, any>
-  current_tier: "free" | "premium" | "enterprise"
-  talk_time_minutes: number
-  talk_time_expires_at: string
   device_tokens?: string[]
   created_at: string
   updated_at: string
 }
+
+export interface Subscriptions {
+  id: string
+  user_id: string | null
+  tier: 'free' | 'premium' | 'silver' | 'add_on' | 'gold' | 'platinum'
+  stripe_subscription_id?: string | null
+  subscription_start_date: string // ISO timestamp
+  subscription_end_date?: string | null
+  talk_minutes_remaining?: number | null
+  status?: 'active' | 'cancelled' | 'expired'
+  created_at?: string
+}
+
 
 export interface Memory {
   id: string
