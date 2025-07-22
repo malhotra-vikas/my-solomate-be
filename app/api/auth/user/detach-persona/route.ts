@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Failed to detach persona" }, { status: 500 });
         }
 
-        return NextResponse.json({ message: "Persona detached successfully" }, { status: 200 });
+        return NextResponse.json({ message: "Solo Mate removed successfully" }, { status: 200 });
     } catch (err) {
         console.error("Detach persona error:", err);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

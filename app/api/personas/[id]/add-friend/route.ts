@@ -38,13 +38,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (error) {
       if (error.code === "23505") {
         // Unique violation, already friended
-        return NextResponse.json({ message: "Persona already added as friend" }, { status: 200 })
+        return NextResponse.json({ message: "Solo Mate already added as friend" }, { status: 200 })
       }
       console.error("Error adding persona as friend:", error)
       return NextResponse.json({ error: "Failed to add persona as friend" }, { status: 500 })
     }
 
-    return NextResponse.json({ message: "Persona added as friend successfully", data }, { status: 200 })
+    return NextResponse.json({ message: "Solo Mate added as friend successfully", data }, { status: 200 })
   } catch (error: any) {
     console.error("Add friend error:", error.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

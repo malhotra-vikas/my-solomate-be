@@ -118,7 +118,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: "Failed to delete persona" }, { status: 500 })
     }
 
-    return NextResponse.json({ message: "Persona deleted successfully" }, { status: 200 })
+    return NextResponse.json({ message: "Solo Mate deleted successfully" }, { status: 200 })
   } catch (error: any) {
     console.error("DELETE persona error:", error.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
