@@ -89,22 +89,30 @@ export async function POST(req: NextRequest) {
       messages: messagesForAI,
     })
 
-    // 7. Store conversation messages
-    await supabase.from("conversations").insert([
-      {
-        user_id: userId,
-        persona_id: personaId,
-        role: "user",
-        content: message,
-      },
-      {
-        user_id: userId,
-        persona_id: personaId,
-        role: "assistant",
-        content: aiResponse,
-      },
-    ])
+    console.log("The assistant generated text is ", aiResponse)
 
+    try {
+      // 7. Store conversation messages
+      await supabase.from("conversations").insert([
+        {
+          user_id: userId,
+          persona_id: personaId,
+          role: "user",
+          content: message,
+        },
+        {
+          user_id: userId,
+          persona_id: personaId,
+          role: "assistant",
+          content: aiResponse,
+        },
+      ])
+      console.log("The chat is stored in conversations ")
+
+    } catch (err) {
+      console.log("The chat failed to get stored in conversations ", err)
+
+    }
     return NextResponse.json(
       {
         response: aiResponse,

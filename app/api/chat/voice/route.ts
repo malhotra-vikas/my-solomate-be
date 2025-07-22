@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
     const supabase = createClient()
 
-    // 1. Fetch user profile and check talk time
+    // 1. Fetch user profile
     const { data: userProfile, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
 
     if (userError || !userProfile) {
@@ -29,7 +29,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User profile not found" }, { status: 404 })
     }
 
-    if (userProfile.current_tier === "free" && userProfile.talk_time_minutes <= 0) {
+    // 1. Fetch user subscription and check talk time
+    const { data: userSubscription, error: userSubscriptionError } = await supabase.from("subscriptions").select("*").eq("user_id", userId).single()
+
+    if (userSubscriptionError || !userSubscription) {
+      console.error("User subscription not found:", userSubscriptionError)
+      return NextResponse.json({ error: "Active User subccription not found" }, { status: 404 })
+    }
+
+    const userTier = userSubscription.tier
+    const remainingTalkTime = userSubscription.talk_minutes_remaining
+    console.log("remainingTalkTime is ", remainingTalkTime)
+
+    if (remainingTalkTime <= 0) {
       return NextResponse.json(
         { error: "You have run out of free talk time. Please subscribe or purchase more minutes." },
         { status: 403 },

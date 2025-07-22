@@ -28,9 +28,6 @@ export async function POST(req: NextRequest) {
         id: userRecord.uid,
         email: userRecord.email,
         name: userRecord.displayName,
-        current_tier: "free",
-        talk_time_minutes: 15, // Free tier daily minutes
-        talk_time_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Expires in 24 hours
       })
       .select()
       .single()
@@ -43,6 +40,18 @@ export async function POST(req: NextRequest) {
       console.error("Supabase user creation error:", error)
       return NextResponse.json({ error: "Failed to create user profile" }, { status: 500 })
     }
+
+    // 3. Store user subscription in Supabase
+    const { data: subData, error: subError } = await supabase
+      .from("subscriptions")
+      .insert({
+        user_id: userRecord.uid,
+      })
+      .select()
+      .single()
+
+    console.log("🔁 Inserted into Supabase Subscriptions:", subData, "Error:", subError)
+
 
     return NextResponse.json(
       {
