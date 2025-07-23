@@ -98,10 +98,20 @@ export interface DialogExample {
 export interface CreatePersonaRequest {
   name: string
   description: string
-  avatar_url?: string
+  avatar_url_1?: string
+  avatar_url_2?: string
+  avatar_url_3?: string
+  avatar_url_4?: string
+  avatar_url_5?: string
   personality: PersonalityConfig
   voice_settings: VoiceConfig
   system_prompt: string
+  tone_description?: string
+  interests?: string[]
+  topics?: string[]
+  aboutMe?: string
+  vibes?: string[]
+  age?: string
 }
 
 export interface UpdatePersonaRequest {
