@@ -68,7 +68,13 @@ export async function PUT(req: Request) {
         const updates: Record<string, any> = {};
         formData.forEach((value, key) => {
             if (key !== 'file') {
-                updates[key] = value;
+                if (key === "interests") {
+                    updates[key] = (value as string)
+                      .split(",")
+                      .map((item) => item.trim());
+                } else {
+                    updates[key] = value;
+                }
             }
         });
 
