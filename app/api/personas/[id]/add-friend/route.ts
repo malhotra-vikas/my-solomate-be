@@ -8,7 +8,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
   }
 
   const personaId = params.id

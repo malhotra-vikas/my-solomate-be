@@ -8,7 +8,7 @@ import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 export async function GET(req: NextRequest, { params }: { params?: { id?: string } }) {
   const currentUserId = await getUserIdFromRequest(req)
   if (!currentUserId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
   }
 
   const supabase = createClient()
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest, { params }: { params?: { id?: string
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
   }
 
   try {
@@ -99,7 +99,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
   }
   const { id } = params;
 

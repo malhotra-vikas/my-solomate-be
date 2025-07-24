@@ -8,7 +8,7 @@ import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 export async function POST(req: NextRequest) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
   }
 
   try {
