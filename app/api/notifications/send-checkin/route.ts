@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   const internalApiKey = req.headers.get("X-Internal-API-Key")
   if (internalApiKey !== process.env.INTERNAL_API_KEY) {
     // Define INTERNAL_API_KEY env var
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
   }
 
   try {

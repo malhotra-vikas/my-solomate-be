@@ -17,7 +17,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   try {
     const decodedToken = await authenticate(req)
-    if (!decodedToken) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    if (!decodedToken) return NextResponse.json({ success: false, error: "Unauthorized request or Token Expired" }, { status: 401 })
 
     const personaId = params.id
     const supabase = createClient()
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   try {
     const personaId = params.id
     const decodedToken = await authenticate(req)
-    if (!decodedToken) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    if (!decodedToken) return NextResponse.json({ success: false, error: "Unauthorized request or Token Expired" }, { status: 401 })
 
     const body = await req.json()
     const { user_input, expected_response, context: dialog_context, style_tags, personality_tags } = body
@@ -90,7 +90,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   try {
     const decodedToken = await authenticate(req)
-    if (!decodedToken) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    if (!decodedToken) return NextResponse.json({ success: false, error: "Unauthorized request or Token Expired" }, { status: 401 })
 
     const personaId = params.id
     const url = req.nextUrl
@@ -145,7 +145,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   try {
     const decodedToken = await authenticate(req)
-    if (!decodedToken) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    if (!decodedToken) return NextResponse.json({ success: false, error: "Unauthorized request or Token Expired" }, { status: 401 })
 
     const personaId = params.id
 

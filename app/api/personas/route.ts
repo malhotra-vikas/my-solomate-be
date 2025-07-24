@@ -8,7 +8,7 @@ import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 export async function GET(req: NextRequest, { params }: { params?: { id?: string } }) {
   const currentUserId = await getUserIdFromRequest(req)
   if (!currentUserId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
   }
 
   const supabase = createClient()
@@ -100,12 +100,28 @@ export async function GET(req: NextRequest, { params }: { params?: { id?: string
 export async function POST(req: NextRequest) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
   }
 
   try {
     const body: CreatePersonaRequest = await req.json()
-    const { name, description, avatar_url, personality, voice_settings, system_prompt } = body
+    const {
+      name,
+      description,
+      avatar_url_1,
+      avatar_url_2,
+      avatar_url_3,
+      avatar_url_4,
+      avatar_url_5,
+      personality,
+      voice_settings,
+      system_prompt,
+      interests,
+      topics,
+      aboutMe,
+      vibes,
+      age,
+    } = body
 
     if (!name || !personality || !voice_settings || !system_prompt) {
       return NextResponse.json(
@@ -129,10 +145,20 @@ export async function POST(req: NextRequest) {
         personality_traits,
         voice_id,
         tone_description,
-        avatar_url: avatar_url || "/placeholder.svg?height=200&width=200",
+        avatar_url_1: avatar_url_1 || "/placeholder.svg?height=200&width=200",
+        avatar_url_2: avatar_url_2 || null,
+        avatar_url_3: avatar_url_3 || null,
+        avatar_url_4: avatar_url_4 || null,
+        avatar_url_5: avatar_url_5 || null,
         initial_prompt: system_prompt,
         personality_config: personality,
         voice_config: voice_settings,
+        interests: interests || null,
+        topics: topics || null,
+        aboutMe: aboutMe || null,
+        vibes: vibes || null,
+        age: age || null,
+        is_active: true,
       })
       .select()
       .single()

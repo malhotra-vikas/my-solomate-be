@@ -7,7 +7,7 @@ import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 export async function GET(req: NextRequest, { params }: { params: { personaId: string } }) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
   }
 
   const { personaId } = params
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { personaId: s
       .select("*")
       .eq("user_id", userId)
       .eq("persona_id", personaId)
-      .order("timestamp", { ascending: true })
+      .order("timestamp", { ascending: false })
 
     if (error) {
       console.error("Error fetching conversation history:", error)

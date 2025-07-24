@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     try {
         const loggedInUser = await getUserIdFromRequest(req)
         if (!loggedInUser) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+            return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
         }
 
         const { persona_id } = await req.json();
