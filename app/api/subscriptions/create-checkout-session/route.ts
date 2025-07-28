@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
+import { getUserIdFromRequest } from '@/lib/extractUserFromRequest';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-06-30.basil",
@@ -7,8 +8,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   
 
 export async function POST(req: NextRequest) {
+  const userId = await getUserIdFromRequest(req);
+  if (!userId) {
+    return NextResponse.json(
+      { error: "Unauthorized request or Token Expired" },
+      { status: 401 }
+    );
+  }
 
-  const { userId, priceId, tier } = await req.json()
+  const { priceId, tier } = await req.json()
 
   try {
     const session = await stripe.checkout.sessions.create({
