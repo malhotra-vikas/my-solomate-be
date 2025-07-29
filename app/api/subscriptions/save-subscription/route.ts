@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
 
     const session =
       await stripe.checkout.sessions.retrieve(stripeSubscriptionId);
+    console.log("🚀 ~ POST ~ session:", session)
 
     const subscriptionId = session.subscription as string;
 
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
     const endData = subscription.items.data.find(
       (item) => item.subscription === subscriptionId
     );
+    console.log("🚀 ~ POST ~ subscription.items:", subscription);
     const formattedStartDate = formatToSupabaseTimestamp(
       new Date(endData?.current_period_end! * 1000)
     );
@@ -56,8 +58,8 @@ export async function POST(req: NextRequest) {
       .from("subscriptions")
       .insert({
         user_id: userId,
-        tier: "premium",
-        stripe_subscription_id: stripeSubscriptionId,
+        tier: session?.metadata?.tier,
+        stripe_subscription_id: subscriptionId,
         subscription_end_date: formattedStartDate,
         status: "active",
       })
