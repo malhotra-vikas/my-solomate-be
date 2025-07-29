@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
         stripe_subscription_id: subscriptionId,
         subscription_end_date: formattedStartDate,
         status: "active",
+        talk_seconds_remaining: session?.metadata?.tier === "premium" ? 60 : session?.metadata?.tier === "silver" ? 30 : 1
       })
       .select()
       .single();
