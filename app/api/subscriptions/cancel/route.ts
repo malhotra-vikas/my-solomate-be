@@ -20,17 +20,7 @@ export async function POST(req: NextRequest) {
   const supabase = createClient();
 
   try {
-    const session =
-      await stripe.checkout.sessions.retrieve(stripeSubscriptionId);
-    console.log("Retrieved session:", session);
-
-    const subscriptionId = session.subscription;
-
-    if (!subscriptionId || typeof subscriptionId !== "string") {
-      throw new Error("No subscription found in session");
-    }
-
-    const canceledSub = await stripe.subscriptions.cancel(subscriptionId);
+    const canceledSub = await stripe.subscriptions.cancel(stripeSubscriptionId);
     console.log("Stripe subscription updated:", canceledSub);
 
     const { error: dbError, data: dbUpdateData } = await supabase
