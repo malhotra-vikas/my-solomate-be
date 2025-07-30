@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
       .from("subscriptions")
       .select("*")
       .eq("user_id", userId)
+      .neq("tier", "free")
       .order("subscription_start_date", { ascending: false });
 
     if (error || !subscriptions) {
@@ -43,6 +44,16 @@ export async function GET(req: NextRequest) {
         }
 
         try {
+          if (sub.tier === "add_on" && sub.stripe_payment_id) {
+            const paymentIntent = await stripe.paymentIntents.retrieve(sub.stripe_payment_id);
+            console.log("🚀 ~ GET ~ paymentIntent:", paymentIntent)
+            return {
+              ...sub,
+              price: (paymentIntent.amount_received ?? 0) / 100,
+              currency: paymentIntent.currency?.toUpperCase() ?? "USD",
+            };
+          }
+          
           const stripeSub = await stripe.subscriptions.retrieve(
             sub.stripe_subscription_id
           );
