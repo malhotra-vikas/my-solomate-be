@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
       // Update Supabase record
       await supabase
         .from("subscriptions")
-        .update({ tier, talk_seconds_remaining: tier === "silver" ? 30 : 60  })
+        .update({ tier, talk_seconds_remaining: tier === "silver" ? (30 * 60) : (60 * 60)  })
         .eq("id", existingSub.id);
 
       return NextResponse.json(
