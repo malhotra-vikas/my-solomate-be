@@ -35,35 +35,44 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
     const session =
       await stripe.checkout.sessions.retrieve(stripeSubscriptionId);
-    console.log("🚀 ~ POST ~ session:", session)
+    console.log("🚀 ~ POST ~ session:", session);
 
-    const subscriptionId = session.subscription as string;
-
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-
-    const endData = subscription.items.data.find(
-      (item) => item.subscription === subscriptionId
-    );
-    console.log("🚀 ~ POST ~ subscription.items:", subscription);
-    const formattedStartDate = formatToSupabaseTimestamp(
-      new Date(endData?.current_period_end! * 1000)
-    );
-
+    const tier = session?.metadata?.tier;
     const supabase = createClient();
+
+    let insertData: any = {
+      user_id: userId,
+      tier,
+      status: "active",
+      stripe_subscription_id: null,
+      talk_seconds_remaining:
+        tier === "premium" ? (60 * 60) : tier === "silver" ? (30 * 60) : (1 * 60),
+    };
+
+    if (tier === "add_on") {
+      // For one-time purchase, store payment_intent instead of subscription
+      insertData.stripe_subscription_id = session.payment_intent;
+    } else if (session.subscription) {
+      const subscriptionId = session.subscription as string;
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    
+      const endData = subscription.items.data.find(
+        (item) => item.subscription === subscriptionId
+      );
+    
+      const formattedStartDate = formatToSupabaseTimestamp(
+        new Date(endData?.current_period_end! * 1000)
+      );
+    
+      insertData.stripe_subscription_id = subscriptionId;
+      insertData.subscription_end_date = formattedStartDate;
+    }
 
     const { data, error } = await supabase
       .from("subscriptions")
-      .insert({
-        user_id: userId,
-        tier: session?.metadata?.tier,
-        stripe_subscription_id: subscriptionId,
-        subscription_end_date: formattedStartDate,
-        status: "active",
-        talk_seconds_remaining: session?.metadata?.tier === "premium" ? 60 : session?.metadata?.tier === "silver" ? 30 : 1
-      })
+      .insert(insertData)
       .select()
       .single();
 
