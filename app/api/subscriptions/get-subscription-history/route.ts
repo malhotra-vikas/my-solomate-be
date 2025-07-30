@@ -18,7 +18,6 @@ export async function GET(req: NextRequest) {
       .from("subscriptions")
       .select("*")
       .eq("user_id", userId)
-      .neq('tier', 'free')
       .order("subscription_start_date", { ascending: false });
 
     if (error || !data) {

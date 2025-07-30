@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       .from("subscriptions")
       .select("*")
       .eq("user_id", userId)
-      .in("tier", ["silver", "gold"])
+      .in("tier", ["silver", "premium"])
       .eq("status", "active")
       .maybeSingle();
 
@@ -125,11 +125,11 @@ export async function POST(req: NextRequest) {
       // Update Supabase record
       await supabase
         .from("subscriptions")
-        .update({ tier, price_id: priceId, updated_at: new Date().toISOString() })
+        .update({ tier, talk_seconds_remaining: tier === "silver" ? 30 : 60  })
         .eq("id", existingSub.id);
 
       return NextResponse.json(
-        { message: "Subscription upgraded/downgraded", subscriptionId: updatedSub.id },
+        { message: "Subscription plan update successfully", subscriptionId: updatedSub.id },
         { status: 200 }
       );
     }
