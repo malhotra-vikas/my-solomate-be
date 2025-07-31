@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { priceId, tier } = await req.json();
+  const { priceId, tier, email } = await req.json();
     const supabase = createClient();
 
   // try {
@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
         success_url: `mysolomate://success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: "mysolomate://cancel",
         metadata: { userId, tier },
+        customer_email: email,
       });
 
       return NextResponse.json({ url: session.url }, { status: 200 });
@@ -142,6 +143,7 @@ export async function POST(req: NextRequest) {
       success_url: `mysolomate://success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: "mysolomate://cancel",
       metadata: { userId, tier },
+      customer_email: email,
     });
 
     return NextResponse.json({ url: checkoutSession.url }, { status: 200 });
