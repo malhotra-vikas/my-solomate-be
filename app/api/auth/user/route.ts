@@ -1,6 +1,90 @@
 import { createClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
+// ✅ DELETE: Mark user for deletion at 11:00PM EST
+export async function DELETE(req: Request) {
+    try {
+        const { searchParams } = new URL(req.url);
+        const userId = searchParams.get('id');
+
+        if (!userId) {
+            return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+        }
+
+        const supabase = createClient();
+
+        const { data: currentUser, error: currentUserError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (currentUserError) {
+            console.error("Supabase error:", currentUserError);
+            return NextResponse.json(
+                { error: "Failed to fetch user data" },
+                { status: 500 }
+            );
+        }
+
+        if (!currentUser) {
+            return NextResponse.json(
+                { error: "User not found" },
+                { status: 404 }
+            );
+        }
+
+        // Check user subscription tier
+        const { data: subscription, error: subscriptionError } = await supabase
+            .from('subscriptions')
+            .select('tier, subscription_end_date')
+            .eq('user_id', userId)
+            .eq('status', 'active')
+            .single();
+
+        if (subscriptionError) {
+            console.error("Subscription fetch error:", subscriptionError);
+            return NextResponse.json(
+                { error: "Failed to fetch subscription info" },
+                { status: 500 }
+            );
+        }
+
+        let deletionDate: Date;
+
+        if (subscription?.tier && subscription.tier !== 'free' && subscription.subscription_end_date) {
+            deletionDate = new Date(subscription.subscription_end_date);
+        } else {
+            deletionDate = new Date();
+            deletionDate.setHours(23, 0, 0, 0); // Set time to 11:00 PM
+        }        
+
+        const { error } = await supabase
+            .from('users')
+            .update({
+                status: "To Be Deleted",
+                marked_delete_date: deletionDate.toISOString(),
+            })
+            .eq('id', userId);
+
+        if (error) {
+            console.error("Supabase delete mark error:", error);
+            return NextResponse.json(
+                { error: "Failed to mark user for deletion" },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json({ message: "User scheduled for deletion." });
+    } catch (error) {
+        console.error("Error marking user for deletion:", error);
+        return NextResponse.json(
+            { error: "Internal server error" },
+            { status: 500 }
+        );
+    }
+}
+
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
@@ -70,8 +154,8 @@ export async function PUT(req: Request) {
             if (key !== 'file') {
                 if (key === "interests") {
                     updates[key] = (value as string)
-                      .split(",")
-                      .map((item) => item.trim());
+                        .split(",")
+                        .map((item) => item.trim());
                 } else {
                     updates[key] = value;
                 }

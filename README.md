@@ -466,4 +466,20 @@ For issues and questions:
 
 ---
 
+## Generate Token for PostMan
+Step 1: Open the Auth URL in Browser
+https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=537794423956-kd6r0tulp27oa4u1auru0q7gss24bvo2.apps.googleusercontent.com&redirect_uri=http://localhost:3000&scope=openid%20email%20profile&access_type=offline&prompt=consent 
+
+Login with Google
+Copy the code from the redirect URL:
+http://localhost:3000/?code=4%2F0AVMBsJg1B0eDUhbNpCOAMnw6bkUzOg7Ro1N1DNiK9vR4NddnXOoMNGt9HnfOFficmgX6IA&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=consent
+
+Step 2: Decode the Code
+Use this site: https://urldecode.org
+Paste: 4%2F0AVMBsJgf1B0eDUh...
+Get decoded: 4/0AVMBsJgf1B0eDUh...
+
+Step 3: Exchange Code for Tokens using Postman or curl
+curl version (works same in Postman)
+
 **Happy coding! 🎉**

@@ -4,7 +4,6 @@ export interface UserProfile {
   name: string
   photo_url?: string
   preferences: Record<string, any>
-  device_tokens?: string[]
   created_at: string
   updated_at: string
 }
