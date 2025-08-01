@@ -20,9 +20,6 @@ CREATE TABLE users (
     birth_date DATE,
     interests TEXT[],
     gender VARCHAR(50) CHECK (gender IN ('male', 'female', 'other')),
-    current_tier VARCHAR(50) DEFAULT 'free' CHECK (current_tier IN ('free', 'premium', 'silver')),
-    talk_time_minutes INTEGER DEFAULT 15,
-    talk_time_expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '24 hours'),
     device_tokens TEXT[], -- Array of FCM device tokens
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
