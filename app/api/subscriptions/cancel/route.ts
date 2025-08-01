@@ -20,22 +20,62 @@ export async function POST(req: NextRequest) {
   const supabase = createClient();
 
   try {
-    const canceledSub = await stripe.subscriptions.cancel(stripeSubscriptionId);
-    console.log("Stripe subscription updated:", canceledSub);
+    if (stripeSubscriptionId && id) {
+      const canceledSub = await stripe.subscriptions.cancel(stripeSubscriptionId);
+      console.log("Stripe subscription cancelled:", canceledSub);
 
-    const { error: dbError, data: dbUpdateData } = await supabase
+      const { error: dbError, data: dbUpdateData } = await supabase
+        .from("subscriptions")
+        .update({ status: "cancelled", subscription_end_date: new Date().toISOString() })
+        .eq("id", id);
+
+      if (dbError) {
+        console.error("Supabase update error:", dbError);
+        return NextResponse.json({ error: "DB update failed" }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        message: "Subscription cancelled successfully",
+        dbUpdateData,
+      });
+    }
+
+    // Case 2: If stripeSubscriptionId and id are NOT provided, cancel all active subscriptions for this user
+    const { data: activeSubs, error: fetchError } = await supabase
       .from("subscriptions")
-      .update({ status: "cancelled", subscription_end_date: new Date().toISOString() })
-      .eq("id", id);
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active");
 
-    if (dbError) {
-      console.error("Supabase update error:", dbError);
-      return NextResponse.json({ error: "DB update failed" }, { status: 500 });
+    if (fetchError) {
+      console.error("Failed to fetch active subscriptions:", fetchError);
+      return NextResponse.json({ error: "Failed to fetch subscriptions" }, { status: 500 });
+    }
+
+    const cancelledResults = [];
+
+    for (const sub of activeSubs) {
+      try {
+        await stripe.subscriptions.cancel(sub.stripe_subscription_id);
+
+        const { error: deleteError } = await supabase
+          .from("subscriptions")
+          .delete()
+          .eq("id", sub.id);
+
+        if (deleteError) {
+          console.error(`Failed to delete sub ID ${sub.id}:`, deleteError);
+        } else {
+          cancelledResults.push({ id: sub.id, deleted: true });
+        }
+      } catch (stripeError: any) {
+        console.error(`Stripe cancel error for ${sub.stripe_subscription_id}:`, stripeError.message);
+      }
     }
 
     return NextResponse.json({
-      message: "Subscription cancelled successfully",
-      dbUpdateData,
+      message: "Active subscriptions cancelled and deleted",
+      cancelled: cancelledResults,
     });
   } catch (error: any) {
     console.error("Stripe Cancel Error:", error.message);

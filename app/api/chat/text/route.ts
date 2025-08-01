@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { personaId, message, initiateChat } = await req.json()
+    const { personaId, message, initiateChat, isCall } = await req.json()
     console.log("In Chat: Recieved User Message ", message)
 
     if (!personaId && (message || initiateChat)) {
@@ -276,27 +276,28 @@ export async function POST(req: NextRequest) {
   })
   console.log("In Chat: Persona responsed with ", aiResponse)
 
-  try {
-    // 7. Store conversation messages
-    await supabase.from("conversations").insert([
-      {
-        user_id: userId,
-        persona_id: personaId,
-        role: "user",
-        content: message,
-      },
-      {
-        user_id: userId,
-        persona_id: personaId,
-        role: "assistant",
-        content: aiResponse,
-      },
-    ])
-    console.log("The chat is stored in conversations ")
+  if (!isCall) { 
+    try {
+      // 7. Store conversation messages
+      await supabase.from("conversations").insert([
+        {
+          user_id: userId,
+          persona_id: personaId,
+          role: "user",
+          content: message,
+        },
+        {
+          user_id: userId,
+          persona_id: personaId,
+          role: "assistant",
+          content: aiResponse,
+        },
+      ])
+      console.log("The chat is stored in conversations ")
+    } catch (err) {
+      console.log("The chat failed to get stored in conversations ", err)
 
-  } catch (err) {
-    console.log("The chat failed to get stored in conversations ", err)
-
+    }
   }
   return NextResponse.json(
     {
