@@ -1,0 +1,7 @@
+{
+    "type": "module",
+    "dependencies": {
+        "@supabase/supabase-js": "^2.39.4",
+        "firebase-admin": "^11.11.1"
+    }
+}
