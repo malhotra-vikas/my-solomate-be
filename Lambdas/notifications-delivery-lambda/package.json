@@ -1,4 +1,9 @@
 {
+    "name": "notifications-lambda",
+    "version": "1.0.0",
+    "scripts": {
+        "zip": "./build.sh"
+    },
     "type": "module",
     "dependencies": {
         "@supabase/supabase-js": "^2.39.4",

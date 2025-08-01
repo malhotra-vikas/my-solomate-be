@@ -19,43 +19,71 @@ if (getApps().length === 0) {
 }
 
 export async function handler(event, context) {
-    for (const record of event.Records) {
-        const message = JSON.parse(record.body)
-        const { userId, title, body, data, sendAt } = message
+    console.log("=== Lambda Invoked ===")
+    console.log("Event:", JSON.stringify(event, null, 2))
+    console.log("Context:", JSON.stringify(context, null, 2))
 
-        // Scheduling logic (optional)
-        const now = new Date()
-        if (sendAt && new Date(sendAt) > now) {
-            console.log(`Skipping until ${sendAt}`)
+    if (!event || !Array.isArray(event.Records)) {
+        console.error("Invalid event format — expected event.Records to be an array.")
+        return { statusCode: 400, body: "Invalid event format" }
+    }
+
+    for (const record of event.Records) {
+        console.log("Processing record:", JSON.stringify(record, null, 2))
+
+        let message
+        try {
+            message = JSON.parse(record.body)
+        } catch (err) {
+            console.error("Failed to parse record.body:", err.message)
             continue
         }
 
-        // Fetch FCM tokens from Supabase
+        const { userId, title, body, data, sendAt } = message
+        console.log(`Notification for user: ${userId} | Title: ${title} | Scheduled for: ${sendAt || "now"}`)
+
+        // Scheduling logic
+        const now = new Date()
+        if (sendAt && new Date(sendAt) > now) {
+            console.log(`Skipping until future time: ${sendAt}`)
+            continue
+        }
+
+        // Fetch tokens from Supabase
         const { data: tokens, error } = await supabase
-            .from('fcm_tokens')
+            .from('device_tokens')
             .select('token')
             .eq('user_id', userId)
 
-        if (error || !tokens?.length) {
-            console.warn(`No FCM tokens for user ${userId}`, error)
+        if (error) {
+            console.error(`Error fetching FCM tokens for user ${userId}:`, error.message)
             continue
         }
 
-        // Send push to all valid tokens
+        if (!tokens || tokens.length === 0) {
+            console.warn(`No FCM tokens found for user ${userId}`)
+            continue
+        }
+
+        console.log(`Found ${tokens.length} token(s) for user ${userId}`)
+
         for (const { token } of tokens) {
+            console.log(`Sending push to token: ${token}`)
+
             try {
                 await getMessaging().send({
                     token,
                     notification: { title, body },
                     data: data || {}
                 })
-                console.log(`Push sent to ${userId} via ${token}`)
+                console.log(`✅ Push sent to ${token}`)
             } catch (err) {
-                console.error(`Failed to send to ${token}`, err.message)
-                // TODO: remove expired token from Supabase if needed
+                console.error(`❌ Failed to send push to token ${token}:`, err.message)
+                // Optionally: mark token as invalid in Supabase
             }
         }
     }
 
+    console.log("=== Lambda Execution Complete ===")
     return { statusCode: 200 }
 }
