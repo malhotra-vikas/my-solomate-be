@@ -108,6 +108,7 @@ export async function POST(req: NextRequest) {
     const {
       name,
       description,
+      avatar_video_url,
       avatar_url_1,
       avatar_url_2,
       avatar_url_3,
@@ -145,6 +146,7 @@ export async function POST(req: NextRequest) {
         personality_traits,
         voice_id,
         tone_description,
+        avatar_video_url: avatar_video_url,
         avatar_url_1: avatar_url_1 || "/placeholder.svg?height=200&width=200",
         avatar_url_2: avatar_url_2 || null,
         avatar_url_3: avatar_url_3 || null,

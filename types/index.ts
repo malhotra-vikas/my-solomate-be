@@ -97,6 +97,7 @@ export interface DialogExample {
 export interface CreatePersonaRequest {
   name: string
   description: string
+  avatar_video_url?: string
   avatar_url_1?: string
   avatar_url_2?: string
   avatar_url_3?: string
