@@ -52,6 +52,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch subscriptions" }, { status: 500 });
     }
 
+    if (!activeSubs || activeSubs.length === 0) {
+      return NextResponse.json({
+        message: "No active subscriptions found for this user.",
+      });
+    }
+
     const cancelledResults = [];
 
     for (const sub of activeSubs) {
