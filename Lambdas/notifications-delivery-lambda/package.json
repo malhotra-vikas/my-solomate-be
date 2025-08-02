@@ -6,6 +6,7 @@
     },
     "type": "module",
     "dependencies": {
+        "@aws-sdk/client-sqs": "^3.859.0",
         "@supabase/supabase-js": "^2.39.4",
         "firebase-admin": "^11.11.1"
     }

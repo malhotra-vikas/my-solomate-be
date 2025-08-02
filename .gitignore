@@ -28,5 +28,8 @@ next-env.d.ts
 
 # Secrets
 secrets/mysolomate-firebase-adminsdk.json
+
 package-lock.json
+
 Lambdas/notifications-delivery-lambda/lambda.zip
+Lambdas/notifications-delivery-lambda/node_modules/
