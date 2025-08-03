@@ -4,6 +4,8 @@ import { auth } from "@/lib/firebaseAdmin"
 import type { CreatePersonaRequest } from "@/types"
 import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 
+import { queueNotificationToSQS } from "@/lib/notifications"
+
 // GET - Unified handler to support multiple persona queries
 export async function GET(req: NextRequest, { params }: { params?: { id?: string } }) {
   const currentUserId = await getUserIdFromRequest(req)
@@ -108,6 +110,7 @@ export async function POST(req: NextRequest) {
     const {
       name,
       description,
+      avatar_video_url,
       avatar_url_1,
       avatar_url_2,
       avatar_url_3,
@@ -145,6 +148,7 @@ export async function POST(req: NextRequest) {
         personality_traits,
         voice_id,
         tone_description,
+        avatar_video_url: avatar_video_url,
         avatar_url_1: avatar_url_1 || "/placeholder.svg?height=200&width=200",
         avatar_url_2: avatar_url_2 || null,
         avatar_url_3: avatar_url_3 || null,
@@ -166,6 +170,44 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error("Error creating persona:", error)
       return NextResponse.json({ error: "Failed to create persona" }, { status: 500 })
+    }
+
+    // Notfy all users about the new Persona that has been added
+    try {
+      const { data: allUsers, error } = await supabase
+        .from("users")
+        .select("id")
+
+      if (error || !allUsers) {
+        console.error("Failed to fetch users:", error)
+        return
+      }
+
+      console.log("Need to send notifications to :", allUsers.length, " users. ")
+
+      const notifications = allUsers.map(({ id }) =>
+        queueNotificationToSQS({
+          userId: id,
+          title: "New Persona Added to SoloMate!",
+          body: `We have just added ${persona.name} to SoloMate.`,
+          type: "NEW_FEATURE_EVENT",
+          data: {
+            screen: "PersonaProfile",
+            persona_id: persona.id
+          },
+          sendAt: new Date().toISOString() // Send immediately
+        })
+      )
+
+      const results = await Promise.allSettled(notifications)
+      console.log("Queued notifications:", results.length, "results")
+
+      const failures = results.filter(r => r.status === "rejected")
+      if (failures.length > 0) {
+        console.warn(`⚠️ ${failures.length} notifications failed`)
+      }
+    } catch (err) {
+      console.error("Failed to queue notification:", err)
     }
 
     return NextResponse.json(persona, { status: 201 })

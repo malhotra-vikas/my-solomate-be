@@ -1,0 +1,12 @@
+{
+    "name": "no-solomate-added-evaluation-lambda",
+    "version": "1.0.0",
+    "scripts": {
+        "zip": "./build.sh"
+    },
+    "type": "module",
+    "dependencies": {
+        "@aws-sdk/client-sqs": "^3.859.0",
+        "@supabase/supabase-js": "^2.39.4"
+    }
+}

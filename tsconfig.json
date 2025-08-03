@@ -2,14 +2,15 @@
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
-    "target": "ES6",
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "module": "ESNext",
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    "types": ["node"],
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
@@ -22,6 +23,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "Lambdas/user-deletion-lambda/handler.mjs"],
   "exclude": ["node_modules"]
 }
