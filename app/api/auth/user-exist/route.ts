@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User profile not found" }, { status: 201 })
     }
 
-    if (userProfile.status === "Deleted" || userProfile.status === "To Be Deleted") {
+    if (userProfile.status === "Deleted") {
       return NextResponse.json(
         { error: { message: "This account has been deactivated" } },
         { status: 403 }
