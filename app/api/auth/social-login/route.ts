@@ -6,7 +6,6 @@ export async function POST(req: NextRequest) {
   try {
     const { email, name, id, photoUrl } = await req.json();
 
-    console.log("🚀 ~ POST ~ email, name, id, photoUrl:", email, name, id, photoUrl)
     const supabase = createClient();
 
     const { data: existData, error: existDataError } = await supabase
@@ -16,6 +15,14 @@ export async function POST(req: NextRequest) {
       .single(); // because email should be unique
 
     if (existData) {
+
+      if (existData?.status === "Deleted") {
+        return NextResponse.json(
+          { error: { message: "This account has been deactivated" } },
+          { status: 403 }
+        )
+      }
+
       return NextResponse.json(
         {
           message: "User already exists",
