@@ -8,13 +8,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export async function POST(req: NextRequest) {
-  const userId = await getUserIdFromRequest(req);
-  if (!userId) {
-    return NextResponse.json(
-      { error: "Unauthorized request or Token Expired" },
-      { status: 401 }
-    );
-  }
+  // const userId = await getUserIdFromRequest(req);
+  // if (!userId) {
+  //   return NextResponse.json(
+  //     { error: "Unauthorized request or Token Expired" },
+  //     { status: 401 }
+  //   );
+  // }
 
   const { stripeSubscriptionId, id } = await req.json();
   const supabase = createClient();
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const { data: activeSubs, error: fetchError } = await supabase
       .from("subscriptions")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", id)
       .eq("status", "active");
 
     if (fetchError) {
