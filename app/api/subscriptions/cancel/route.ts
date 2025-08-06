@@ -4,30 +4,30 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-06-30.basil",
+  apiVersion: "2025-07-30.basil",
 });
 
 export async function POST(req: NextRequest) {
-  // const userId = await getUserIdFromRequest(req);
-  // if (!userId) {
-  //   return NextResponse.json(
-  //     { error: "Unauthorized request or Token Expired" },
-  //     { status: 401 }
-  //   );
-  // }
+  const userId = await getUserIdFromRequest(req);
+  if (!userId) {
+    return NextResponse.json(
+      { error: "Unauthorized request or Token Expired" },
+      { status: 401 }
+    );
+  }
 
-  const { stripeSubscriptionId, id } = await req.json();
+  const { stripeSubscriptionId } = await req.json();
   const supabase = createClient();
 
   try {
-    if (stripeSubscriptionId && id) {
+    if (stripeSubscriptionId && userId) {
       const canceledSub = await stripe.subscriptions.cancel(stripeSubscriptionId);
       console.log("Stripe subscription cancelled:", canceledSub);
 
       const { error: dbError, data: dbUpdateData } = await supabase
         .from("subscriptions")
         .update({ status: "cancelled", subscription_end_date: new Date().toISOString() })
-        .eq("id", id);
+        .eq("id", userId);
 
       if (dbError) {
         console.error("Supabase update error:", dbError);
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const { data: activeSubs, error: fetchError } = await supabase
       .from("subscriptions")
       .select("*")
-      .eq("user_id", id)
+      .eq("user_id", userId)
       .eq("status", "active");
 
     if (fetchError) {
@@ -62,7 +62,9 @@ export async function POST(req: NextRequest) {
 
     for (const sub of activeSubs) {
       try {
-        await stripe.subscriptions.cancel(sub.stripe_subscription_id);
+        if (sub.tier !== "add_on") {
+          await stripe.subscriptions.cancel(sub.stripe_subscription_id);
+        }
 
         const { error: deleteError } = await supabase
           .from("subscriptions")

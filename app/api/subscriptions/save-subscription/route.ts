@@ -15,7 +15,7 @@ function formatToSupabaseTimestamp(date: Date): string {
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-06-30.basil",
+  apiVersion: "2025-07-30.basil",
 });
 
 export async function POST(req: NextRequest) {
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     console.log("🚀 ~ POST ~ session:", session);
 
     const tier = session?.metadata?.tier;
+    const addonMinute = session?.metadata?.totalMinute ? +session?.metadata?.totalMinute : 1
     const supabase = createClient();
 
     let insertData: any = {
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
       status: "active",
       stripe_subscription_id: null,
       talk_seconds_remaining:
-        tier === "premium" ? (60 * 60) : tier === "silver" ? (30 * 60) : (1 * 60),
+        tier === "premium" ? (60 * 60) : tier === "silver" ? (30 * 60) : (addonMinute * 60),
     };
 
     if (tier === "add_on") {
