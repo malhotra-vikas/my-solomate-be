@@ -44,8 +44,8 @@ export async function GET(req: NextRequest) {
         }
 
         try {
-          if (sub.tier === "add_on" && sub.stripe_payment_id) {
-            const paymentIntent = await stripe.paymentIntents.retrieve(sub.stripe_payment_id);
+          if (sub.tier === "add_on" && sub.stripe_subscription_id) {
+            const paymentIntent = await stripe.paymentIntents.retrieve(sub.stripe_subscription_id);
             console.log("🚀 ~ GET ~ paymentIntent:", paymentIntent)
             return {
               ...sub,

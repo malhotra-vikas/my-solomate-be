@@ -49,7 +49,8 @@ export async function POST(req: NextRequest) {
       status: "active",
       stripe_subscription_id: null,
       talk_seconds_remaining:
-        tier === "premium" ? (60 * 60) : tier === "silver" ? (30 * 60) : (addonMinute * 60),
+        tier === "premium" ? (60 * 60) : tier === "silver" ? (30 * 60) : (15 * 60),
+      addon_seconds_remaining: tier === "add_on" ? (addonMinute * 60) : null
     };
 
     if (tier === "add_on") {
