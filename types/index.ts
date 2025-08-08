@@ -112,6 +112,9 @@ export interface CreatePersonaRequest {
   aboutMe?: string
   vibes?: string[]
   age?: string
+  motto?: string
+  unexpected_opinion?: string
+  time_travel_era?: string
 }
 
 export interface UpdatePersonaRequest {
