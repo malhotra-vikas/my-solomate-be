@@ -124,6 +124,9 @@ export async function POST(req: NextRequest) {
       aboutMe,
       vibes,
       age,
+      motto,
+      unexpected_opinion,
+      time_travel_era
     } = body
 
     if (!name || !personality || !voice_settings || !system_prompt) {
@@ -163,6 +166,9 @@ export async function POST(req: NextRequest) {
         vibes: vibes || null,
         age: age || null,
         is_active: true,
+        motto: motto || "",
+        unexpected_opinion: unexpected_opinion || "",
+        time_travel_era: time_travel_era || ""
       })
       .select()
       .single()
