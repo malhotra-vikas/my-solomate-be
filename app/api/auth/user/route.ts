@@ -34,67 +34,22 @@ export async function DELETE(req: Request) {
             );
         }
 
-        const { data: subscription, error: subscriptionError } = await supabase
-            .from('subscriptions')
-            .select('tier, subscription_end_date, stripe_subscription_id')
-            .eq('user_id', userId)
-            .eq('status', 'active');
+        // const { data: subscription, error: subscriptionError } = await supabase
+        //     .from('subscriptions')
+        //     .select('tier, subscription_end_date, stripe_subscription_id')
+        //     .eq('user_id', userId)
+        //     .eq('status', 'active');
 
-        if (subscriptionError) {
-            console.error("Subscription fetch error:", subscriptionError);
-            return NextResponse.json(
-                { error: "Failed to fetch subscription info" },
-                { status: 500 }
-            );
-        }
+        // if (subscriptionError) {
+        //     console.error("Subscription fetch error:", subscriptionError);
+        //     return NextResponse.json(
+        //         { error: "Failed to fetch subscription info" },
+        //         { status: 500 }
+        //     );
+        // }
 
         let deletionDate: Date = new Date();
         deletionDate.setHours(23, 0, 0, 0);
-
-        if (subscription && subscription.length > 0) {
-            const hasPaidSubscription = subscription.some(sub => sub.tier !== 'free');
-
-            if (hasPaidSubscription) {
-                const furthestEndDate = subscription.reduce((latestDate, sub) => {
-                    const subDate = new Date(sub.subscription_end_date);
-                    return subDate > latestDate ? subDate : latestDate;
-                }, new Date(0));
-
-                deletionDate = furthestEndDate;
-            }
-
-            const userSubscriptionData= subscription.find(sub => sub.tier !== 'free')
-            const stripeSubscriptionId = userSubscriptionData?.stripe_subscription_id
-
-            try {
-                const authHeader = req.headers.get('Authorization');
-                if (!authHeader) {
-                    throw new Error('Missing authorization header');
-                }
-
-                const cancellationResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/subscriptions/cancel`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': authHeader
-                    },
-                    body: JSON.stringify({
-                        id: userId,
-                        stripeSubscriptionId
-                    })
-                });
-
-                if (!cancellationResponse.ok) {
-                    const errorData = await cancellationResponse.json();
-                    console.error("Subscription cancellation failed:", errorData);
-                } else {
-                    const successData = await cancellationResponse.json();
-                    console.log("Subscriptions cancelled:", successData);
-                }
-            } catch (apiError) {
-                console.error("Error calling cancellation API:", apiError);
-            }
-        }
 
         const { error } = await supabase
             .from('users')

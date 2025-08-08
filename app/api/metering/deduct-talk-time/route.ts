@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const { secondsToDeduct } = await req.json()
-    if (!secondsToDeduct || secondsToDeduct <= 0) {
+    if (!secondsToDeduct || secondsToDeduct < 0) {
         return NextResponse.json({ error: "Invalid secondsToDeduct" }, { status: 400 })
     }
 

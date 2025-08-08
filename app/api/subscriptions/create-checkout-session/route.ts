@@ -4,7 +4,7 @@ import { getUserIdFromRequest } from "@/lib/extractUserFromRequest";
 import { createClient } from "@/lib/supabase";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-06-30.basil",
+  apiVersion: "2025-07-30.basil",
 });
 
 
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
         payment_method_types: ["card"],
         success_url: `mysolomate://success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: "mysolomate://cancel",
-        metadata: { userId, tier },
+        metadata: { userId, tier, totalMinute: (+totalAmount / 0.99) },
         customer_email: email,
       });
 
