@@ -10,16 +10,21 @@ export async function GET(req: NextRequest, { params }: { params: { personaId: s
     return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
   }
 
-  const { personaId } = params
+  const { personaId } = await params
   const supabase = createClient()
 
   try {
-    const { data: conversations, error } = await supabase
+
+    let query = supabase
       .from("conversations")
       .select("*")
       .eq("user_id", userId)
-      .eq("persona_id", personaId)
       .order("timestamp", { ascending: false })
+
+    if (personaId) {
+      query = query.eq("persona_id", personaId)
+    }
+    const { data: conversations, error } = await query
 
     if (error) {
       console.error("Error fetching conversation history:", error)

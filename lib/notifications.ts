@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase";
 import AWS from "aws-sdk"
 
 AWS.config.update({
@@ -26,6 +27,7 @@ export async function queueNotificationToSQS(notification: NotificationPayload) 
     const isFuture = sendAtTime > now
 
     const targetQueue = isFuture ? SCHEDULED_QUEUE_URL : NOTIFICATION_QUEUE_URL
+    const supabase = createClient()
 
     const message = {
         ...notification,
@@ -48,13 +50,38 @@ export async function queueNotificationToSQS(notification: NotificationPayload) 
     console.log("Full Message Body:", params.MessageBody)
 
     return new Promise((resolve, reject) => {
-        sqs.sendMessage(params, (err, data) => {
+        sqs.sendMessage(params, async (err, data) => {
             if (err) {
                 console.error("❌ Failed to queue message to SQS:", err)
                 reject(err)
             } else {
                 console.log("✅ Message successfully queued:", data.MessageId)
+
+                // 🧠 Save to Supabase
+                try {
+                    const { error } = await supabase.from("notifications").insert({
+                        user_id: notification.userId,
+                        title: notification.title,
+                        body: notification.body,
+                        type: notification.type || null,
+                        data: notification.data || {},
+                        send_at: sendAtTime.toISOString(),
+                        status: "unread" // <=== NEW
+                    })
+
+                    if (error) {
+                        console.error("❌ Failed to save notification in Supabase:", error.message)
+                    } else {
+                        console.log("📦 Notification saved in Supabase")
+                    }
+                } catch (err) {
+                    console.error("❌ Supabase insert failed:", err)
+                }
+
+
+
                 resolve({ queued: true, targetQueue, messageId: data.MessageId })
+
             }
         })
     })

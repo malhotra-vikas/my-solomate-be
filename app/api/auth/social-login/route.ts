@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     if (existData) {
 
-      if (existData?.status === "Deleted" || existData?.status === "To Be Deleted") {
+      if (existData?.status === "Deleted") {
         return NextResponse.json(
           { error: { message: "This account has been deactivated" } },
           { status: 403 }

@@ -1,0 +1,58 @@
+{
+    "Onboarding Completion": {
+        "title": "Welcome to SoloMate!",
+        "bodyTemplate": "Hi {firstName}, complete your onboarding to get started.",
+        "type": "ONBOARDING_REMINDER",
+        "data": {
+            "screen": "OnboardingIntro"
+        }
+    },
+    "First Call Reminder": {
+        "title": "Hop on a call with your SoloMate!",
+        "bodyTemplate": "Hi {firstName}, have your first call and see the magic happen.",
+        "type": "FIRST_CALL_REMINDER",
+        "data": {
+            "screen": "CallHome"
+        }
+    },
+    "Emotional Check-In": {
+        "title": "How are you feeling today?",
+        "bodyTemplate": "Hi {firstName}, take a moment for your daily check-in.",
+        "type": "EMOTIONAL_CHECKIN",
+        "data": {
+            "screen": "Emotions"
+        }
+    },
+    "Daily Engagement": {
+        "title": "hi {firstName}, how are you feeling today?",
+        "bodyTemplate": "{soloMateName}, is waiting to hear from you.",
+        "type": "Daily_Engagement",
+        "data": {
+            "screen": "MySoloMate"
+        }
+    },
+    "Time-Based Reconnects": {
+        "title": "We miss you!",
+        "bodyTemplate": "Hey {firstName}, come back and reconnect with your SoloMate.",
+        "type": "RECONNECT_REMINDER",
+        "data": {
+            "screen": "Home"
+        }
+    },
+    "Upgrade Promo": {
+        "title": "Unlock premium experience!",
+        "bodyTemplate": "Hi {firstName}, get more talk time and new features by upgrading now.",
+        "type": "UPGRADE_PROMO",
+        "data": {
+            "screen": "Upgrade"
+        }
+    },
+    "Review Request": {
+        "title": "Loving SoloMate?",
+        "bodyTemplate": "Hi {firstName}, we’d love your feedback. Leave a review today!",
+        "type": "REVIEW_REQUEST",
+        "data": {
+            "screen": "Review"
+        }
+    }
+}
