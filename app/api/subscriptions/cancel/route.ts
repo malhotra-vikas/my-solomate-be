@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { stripeSubscriptionId } = await req.json();
+  const { stripeSubscriptionId, id } = await req.json();
   const supabase = createClient();
 
   try {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       const { error: dbError, data: dbUpdateData } = await supabase
         .from("subscriptions")
         .update({ status: "cancelled", subscription_end_date: new Date().toISOString() })
-        .eq("id", userId);
+        .eq("id", id);
 
       if (dbError) {
         console.error("Supabase update error:", dbError);

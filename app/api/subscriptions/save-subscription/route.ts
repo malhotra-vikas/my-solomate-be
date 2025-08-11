@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       status: "active",
       stripe_subscription_id: null,
       talk_seconds_remaining:
-        tier === "premium" ? (60 * 60) : tier === "silver" ? (30 * 60) : (addonMinute * 60),
+        tier === "premium" ? (60 * 60) : tier === "silver" ? (30 * 60) : +(addonMinute * 60).toFixed(),
     };
 
     if (tier === "add_on") {
@@ -72,10 +72,10 @@ export async function POST(req: NextRequest) {
     }
 
     const { data, error } = await supabase
-      .from("subscriptions")
-      .insert(insertData)
-      .select()
-      .single();
+    .from("subscriptions")
+    .insert(insertData)
+    .select()
+    .single();
 
     if (error) {
       console.error("Error Save subscription:", error);
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { message: "Subscription data saved successfully!" },
+      {data: data.tier === 'add_on' ? {...data, addonMinute: +addonMinute.toFixed()} : data, message: "Subscription data saved successfully!" },
       { status: 200 }
     );
   } catch (error: any) {
