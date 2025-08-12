@@ -128,137 +128,192 @@ export async function DELETE(req: NextRequest) {
 
 }
 
+const CALL_MAX_TOKENS = 50;         // ~1 short sentence
+const CALL_TEMPERATURE = 0.4;       // tighter, less rambling
+const CALL_STOP = ["\n\n", "User:", "You:", "USER:", "ASSISTANT:"]; // early stops
+
+// Helper: strip common emoji/pictographs (keeps ASCII + basic punctuation)
+const stripEmojis = (s: string) =>
+  s.replace(
+    /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{200D}\u{2640}-\u{2642}\u{2600}-\u{27BF}]/gu,
+    ""
+  );
+
+// Helper: keep only the first sentence (fallback to 160 chars)
+const firstSentence = (s: string) => {
+  const i = s.search(/[.!?](\s|$)/);
+  if (i >= 0) return s.slice(0, i + 1).trim();
+  return s.slice(0, 160).trim();
+};
+
+
 // ✅ POST: Create a single chat message and persist it
 export async function POST(req: NextRequest) {
-  const userId = await getUserIdFromRequest(req)
+  // helpers for timing/size (logging only)
+  const ms = () => (globalThis.performance?.now?.() ?? Date.now());
+  const bytes = (s: string) => (typeof s === "string" ? new TextEncoder().encode(s).length : 0);
+
+  const tReq0 = ms();
+
+  const userId = await getUserIdFromRequest(req);
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 });
   }
 
   try {
-    const { personaId, message, initiateChat, isCall } = await req.json()
-    console.log("In Chat: Recieved User Message ", message)
+    const tParse0 = ms();
+    const { personaId, message, initiateChat, isCall } = await req.json();
+    const tParse1 = ms();
+    console.log("[CHAT] request_parsed", { ms: Math.round(tParse1 - tParse0), initiateChat, isCall });
+
+    console.log("[CHAT] received_user_message", { len: (message?.length ?? 0) });
 
     if (!personaId && (message || initiateChat)) {
-      return NextResponse.json({ error: "Persona ID is required" }, { status: 400 })
+      return NextResponse.json({ error: "Persona ID is required" }, { status: 400 });
     }
 
-    // Send the 1st Seeding Chat message to the User
+    // ------------------------------------------------------------------------
+    // INITIATE CHAT BRANCH
+    // ------------------------------------------------------------------------
     if (initiateChat) {
-      const supabase = createClient()
+      const supabase = createClient();
 
-      // 1. Fetch user profile
-      const { data: userProfile, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
+      const tUser0 = ms();
+      const { data: userProfile, error: userError } =
+        await supabase.from("users").select("*").eq("id", userId).single();
+      const tUser1 = ms();
+      console.log("[DB] user_profile", { ms: Math.round(tUser1 - tUser0), ok: !userError });
 
       if (userError || !userProfile) {
-        console.error("User profile not found:", userError)
-        return NextResponse.json({ error: "User profile not found" }, { status: 404 })
+        console.error("[CHAT] user profile not found:", userError);
+        return NextResponse.json({ error: "User profile not found" }, { status: 404 });
       }
 
-      // 2. Fetch persona details
-      const { data: persona, error: personaError } = await supabase
-        .from("personas")
-        .select("*")
-        .eq("id", personaId)
-        .single()
+      const tPersona0 = ms();
+      const { data: persona, error: personaError } =
+        await supabase.from("personas").select("*").eq("id", personaId).single();
+      const tPersona1 = ms();
+      console.log("[DB] persona", { ms: Math.round(tPersona1 - tPersona0), ok: !personaError });
 
       if (personaError || !persona) {
-        console.error("Persona not found:", personaError)
-        return NextResponse.json({ error: "Persona not found" }, { status: 404 })
+        console.error("[CHAT] persona not found:", personaError);
+        return NextResponse.json({ error: "Persona not found" }, { status: 404 });
       }
 
-      // 5. Build enhanced prompt with training examples
-      let enhancedPrompt = persona.initial_prompt
+      // Build messages (no behavior change)
+      let enhancedPrompt = persona.initial_prompt;
+      const messagesForAI = [{ role: "system" as const, content: enhancedPrompt }];
 
-      const messagesForAI = [
-        { role: "system" as const, content: enhancedPrompt },
-      ]
-
-      // 6. Generate AI response
-      const { text: aiResponse } = await generateText({
+      // LLM timing
+      const promptBytes = bytes(enhancedPrompt);
+      const tLLM0 = ms();
+      const { text: aiSeed } = await generateText({
         model: aiSdkOpenai("gpt-4o"),
         messages: messagesForAI,
-      })
-      console.log("In Chat: Persona Initiated chat with ", aiResponse)
+      });
+      const tLLM1 = ms();
 
+      console.log("[LLM:init] done", {
+        ms: Math.round(tLLM1 - tLLM0),
+        promptBytes,
+        aiChars: aiSeed?.length ?? 0,
+      });
+      console.log("[CHAT] initiate_response_sample", aiSeed?.slice(0, 120));
+
+      // Persist assistant seed (unchanged)
       try {
-        // 7. Store conversation messages
+        const tStore0 = ms();
         await supabase.from("conversations").insert([
-          {
-            user_id: userId,
-            persona_id: personaId,
-            role: "assistant",
-            content: aiResponse,
-          },
-        ])
-        console.log("The chat is stored in conversations ")
-
+          { user_id: userId, persona_id: personaId, role: "assistant", content: aiSeed },
+        ]);
+        const tStore1 = ms();
+        console.log("[DB] store_seed", { ms: Math.round(tStore1 - tStore0) });
       } catch (err) {
-        console.log("The chat failed to get stored in conversations ", err)
-
+        console.log("[DB] store_seed_failed", err);
       }
-      return NextResponse.json(
-        {
-          response: aiResponse
-        },
-        { status: 200 },
-      )
+
+      const res = NextResponse.json({ response: aiSeed }, { status: 200 });
+      // Headers for client-side correlation
+      res.headers.set("x-llm-ms", String(Math.round(tLLM1 - tLLM0)));
+      res.headers.set("x-llm-ai-chars", String(aiSeed?.length ?? 0));
+      res.headers.set("x-llm-prompt-bytes", String(promptBytes));
+      res.headers.set("x-req-ms", String(Math.round(ms() - tReq0)));
+      return res;
     }
 
-    const supabase = createClient()
+    // ------------------------------------------------------------------------
+    // NORMAL / CALL CHAT BRANCH
+    // ------------------------------------------------------------------------
+    const supabase = createClient();
+    const tDbAll0 = ms();
 
-    // 1. Fetch user profile
-    const { data: userProfile, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
+    const [userRes, personaRes, convRes] = await Promise.all([
+      supabase.from("users").select("*").eq("id", userId).single(),
+      supabase.from("personas").select("*").eq("id", personaId).single(),
+      supabase
+        .from("conversations")
+        .select("role, content, timestamp")
+        .eq("user_id", userId)
+        .eq("persona_id", personaId)
+        .gte("timestamp", new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString())
+        .order("timestamp", { ascending: true })
+        .limit(isCall ? 6 : 20), // trimmed for calls
+    ]);
+    const tDbAll1 = ms();
+    console.log("[DB] batch", {
+      ms: Math.round(tDbAll1 - tDbAll0),
+      userOk: !userRes.error,
+      personaOk: !personaRes.error,
+      convOk: !convRes.error,
+      turns: convRes.data?.length ?? 0,
+    });
 
-    if (userError || !userProfile) {
-      console.error("User profile not found:", userError)
-      return NextResponse.json({ error: "User profile not found" }, { status: 404 })
+    const userProfile = userRes.data;
+    const persona = personaRes.data;
+    const recentConversations = convRes.data;
+
+    if (!userProfile) return NextResponse.json({ error: "User profile not found" }, { status: 404 });
+    if (!persona) return NextResponse.json({ error: "Persona not found" }, { status: 404 });
+
+    // Examples: skip for calls
+    let similarExamples: any[] = [];
+    if (!isCall) {
+      const tEx0 = ms();
+      similarExamples = await findSimilarDialogExamples(personaId, message, 3, 0.7);
+      const tEx1 = ms();
+      console.log("[SIM] similar_examples", { ms: Math.round(tEx1 - tEx0), count: similarExamples.length });
+    } else {
+      console.log("[SIM] skipped_for_call");
     }
 
-    // 2. Fetch persona details
-    const { data: persona, error: personaError } = await supabase
-      .from("personas")
-      .select("*")
-      .eq("id", personaId)
-      .single()
-
-    if (personaError || !persona) {
-      console.error("Persona not found:", personaError)
-      return NextResponse.json({ error: "Persona not found" }, { status: 404 })
-    }
-
-    // 3. Retrieve recent conversations for context
-    const { data: recentConversations, error: convError } = await supabase
-      .from("conversations")
-      .select("role, content")
-      .eq("user_id", userId)
-      .eq("persona_id", personaId)
-      .gte("timestamp", new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString())
-      .order("timestamp", { ascending: true })
-      .limit(20)
-
-    if (convError) {
-      console.error("Error fetching recent conversations:", convError)
-    }
-
-    // 4. Find similar dialog examples for style/personality training
-    const similarExamples = await findSimilarDialogExamples(personaId, message, 3, 0.7)
-
-    // 5. Build enhanced prompt with training examples
-    let enhancedPrompt = persona.initial_prompt
+    // Build prompt (unchanged logic; we only log sizes)
+    let enhancedPrompt = persona.initial_prompt;
 
     if (similarExamples.length > 0) {
-      enhancedPrompt += "\n\nHere are some examples of how you should respond based on your training:\n"
+      enhancedPrompt += "\n\nHere are some examples of how you should respond based on your training:\n";
       similarExamples.forEach((example, index) => {
-        enhancedPrompt += `\nExample ${index + 1}:\n`
-        enhancedPrompt += `User: ${example.user_input}\n`
-        enhancedPrompt += `You: ${example.expected_response}\n`
+        enhancedPrompt += `\nExample ${index + 1}:\n`;
+        enhancedPrompt += `User: ${example.user_input}\n`;
+        enhancedPrompt += `You: ${example.expected_response}\n`;
         if (example.context) {
-          enhancedPrompt += `Context: ${example.context}\n`
+          enhancedPrompt += `Context: ${example.context}\n`;
         }
-      })
-      enhancedPrompt += "\nNow respond to the current user message in a similar style and personality:\n"
+      });
+      enhancedPrompt += "\nNow respond to the current user message in a similar style and personality:\n";
     }
+
+    const historyTurns = (recentConversations || []).length;
+    const historyBytes = bytes(
+      JSON.stringify((recentConversations || []).map((m: any) => ({ r: m.role, c: m.content })))
+    );
+    const promptBytes = bytes(enhancedPrompt);
+
+    console.log("[PROMPT] sizes", {
+      promptBytes,
+      historyTurns,
+      historyBytes,
+      userMsgChars: message?.length ?? 0,
+    });
 
     const messagesForAI = [
       { role: "system" as const, content: enhancedPrompt },
@@ -267,47 +322,85 @@ export async function POST(req: NextRequest) {
         content: msg.content,
       })),
       { role: "user" as const, content: message },
-    ]
+    ];
 
-    // 6. Generate AI response
-    const { text: aiResponse } = await generateText({
-      model: aiSdkOpenai("gpt-4o"),
-      messages: messagesForAI,
-    })
-    console.log("In Chat: Persona responsed with ", aiResponse)
+    // ---------- Build generation options ----------
+const generationOptions =
+  isCall
+    ? {
+        model: aiSdkOpenai("gpt-4o"),
+        messages: messagesForAI,
+        maxTokens: CALL_MAX_TOKENS,
+        temperature: CALL_TEMPERATURE,
+        stop: CALL_STOP,
+      }
+    : {
+        model: aiSdkOpenai("gpt-4o"),
+        messages: messagesForAI,
+      };
 
+    // LLM timing
+    const tLLM0 = ms();
+    const result = await generateText(generationOptions as any);
+    const tLLM1 = ms();
+
+    let aiResponse = result.text ?? "";
+    const usage = (result as any).usage || {};
+
+    console.log("[LLM] done", {
+      ms: Math.round(tLLM1 - tLLM0),
+      promptBytes,
+      historyTurns,
+      historyBytes,
+      aiChars: aiResponse.length,
+      usage,
+    });
+    console.log("[CHAT] assistant_sample", aiResponse.slice(0, 160));
+
+    // ---------- Post-cap for calls (guard rails) ----------
+    let cappedMeta: any = { applied: false };
+
+    // Persist only for non-call (original behavior)
     if (!isCall) {
       try {
-        // 7. Store conversation messages
+        const tStore0 = ms();
         await supabase.from("conversations").insert([
-          {
-            user_id: userId,
-            persona_id: personaId,
-            role: "user",
-            content: message,
-          },
-          {
-            user_id: userId,
-            persona_id: personaId,
-            role: "assistant",
-            content: aiResponse,
-          },
-        ])
-        console.log("The chat is stored in conversations ")
+          { user_id: userId, persona_id: personaId, role: "user", content: message },
+          { user_id: userId, persona_id: personaId, role: "assistant", content: aiResponse },
+        ]);
+        const tStore1 = ms();
+        console.log("[DB] store_conversation", { ms: Math.round(tStore1 - tStore0) });
       } catch (err) {
-        console.log("The chat failed to get stored in conversations ", err)
-
+        console.log("[DB] store_conversation_failed", err);
       }
+    } else {
+        // 1) remove emojis (voice adds no value, costs synth time)
+        console.log("Before Emojee strip", { aiResponse });
+        aiResponse = stripEmojis(aiResponse);
+        console.log("After Emojee strip", { aiResponse });
     }
-    return NextResponse.json(
+
+    const res = NextResponse.json(
       {
         response: aiResponse,
         training_examples_used: similarExamples.length,
       },
       { status: 200 },
-    )
+    );
+
+    // Telemetry headers for client-side logs
+    res.headers.set("x-llm-ms", String(Math.round(tLLM1 - tLLM0)));
+    res.headers.set("x-llm-ai-chars", String(aiResponse.length));
+    res.headers.set("x-llm-prompt-bytes", String(promptBytes));
+    res.headers.set("x-llm-history-turns", String(historyTurns));
+    res.headers.set("x-llm-history-bytes", String(historyBytes));
+    if (usage?.promptTokens) res.headers.set("x-llm-prompt-tokens", String(usage.promptTokens));
+    if (usage?.completionTokens) res.headers.set("x-llm-completion-tokens", String(usage.completionTokens));
+    // end-to-end server time (request entry to response build)
+    res.headers.set("x-req-ms", String(Math.round(ms() - tReq0)));
+    return res;
   } catch (error: any) {
-    console.error("Text chat error:", error.message)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("[CHAT] error:", error?.message || error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
