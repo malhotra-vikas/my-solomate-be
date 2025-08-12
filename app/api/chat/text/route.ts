@@ -139,13 +139,6 @@ const stripEmojis = (s: string) =>
     ""
   );
 
-// Helper: keep only the first sentence (fallback to 160 chars)
-const firstSentence = (s: string) => {
-  const i = s.search(/[.!?](\s|$)/);
-  if (i >= 0) return s.slice(0, i + 1).trim();
-  return s.slice(0, 160).trim();
-};
-
 
 // ✅ POST: Create a single chat message and persist it
 export async function POST(req: NextRequest) {
@@ -208,7 +201,7 @@ export async function POST(req: NextRequest) {
       const promptBytes = bytes(enhancedPrompt);
       const tLLM0 = ms();
       const { text: aiSeed } = await generateText({
-        model: aiSdkOpenai("gpt-4o"),
+        model: aiSdkOpenai("gpt-4o-mini"),
         messages: messagesForAI,
       });
       const tLLM1 = ms();
@@ -325,17 +318,16 @@ export async function POST(req: NextRequest) {
     ];
 
     // ---------- Build generation options ----------
-const generationOptions =
-  isCall
-    ? {
-        model: aiSdkOpenai("gpt-4o"),
+    const generationOptions = isCall
+      ? {
+        model: aiSdkOpenai("gpt-4o-mini"),       // Faster, cheaper model for calls
         messages: messagesForAI,
         maxTokens: CALL_MAX_TOKENS,
         temperature: CALL_TEMPERATURE,
         stop: CALL_STOP,
       }
-    : {
-        model: aiSdkOpenai("gpt-4o"),
+      : {
+        model: aiSdkOpenai("gpt-4o-mini"),
         messages: messagesForAI,
       };
 
@@ -374,10 +366,18 @@ const generationOptions =
         console.log("[DB] store_conversation_failed", err);
       }
     } else {
-        // 1) remove emojis (voice adds no value, costs synth time)
-        console.log("Before Emojee strip", { aiResponse });
-        aiResponse = stripEmojis(aiResponse);
-        console.log("After Emojee strip", { aiResponse });
+      // 1) remove emojis (voice adds no value, costs synth time)
+      const cap0 = ms();
+      const before = aiResponse.length;
+      console.log("[CALL] pre_cap", { aiChars: before });
+
+      console.log("Before Emojee strip", { aiResponse });
+      aiResponse = stripEmojis(aiResponse);
+      console.log("After Emojee strip", { aiResponse });
+
+      const after = aiResponse.length;
+      const cap1 = ms();
+      console.log("[CALL] post_cap", { before, after, cap_ms: Math.round(cap1 - cap0) });
     }
 
     const res = NextResponse.json(

@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
 
     // 5. Generate AI response using OpenAI
     const { text: aiResponseText } = await generateText({
-      model: aiSdkOpenai("gpt-4o"),
+      model: aiSdkOpenai("gpt-4o-mini"),
       messages: messagesForAI,
     })
 
