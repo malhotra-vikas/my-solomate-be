@@ -8,19 +8,38 @@ import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 // ✅ GET: Get calls for User
 export async function GET(req: NextRequest) {
     const userId = await getUserIdFromRequest(req)
-    if (!userId) return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
+    if (!userId)
+      return NextResponse.json(
+        { error: "Unauthorized request or Token Expired" },
+        { status: 401 }
+      );
 
-    const supabase = createClient()
-    const { data, error } = await supabase
-        .from("calls")
-        .select("*")
-        .eq("user_id", userId)
+    const supabase = createClient();
+    const { data: calls, error } = await supabase
+      .from("calls")
+      .select("*")
+      .eq("user_id", userId);
 
-    if (error || !data) {
-        return NextResponse.json({ error: "Calls not found" }, { status: 404 })
+    if (error || !calls) {
+      return NextResponse.json({ error: "Calls not found" }, { status: 404 });
+    }
+    const personaIds = calls.map((c) => c.persona_id);
+
+    const { data: personas, error: personasError } = await supabase
+      .from("personas")
+      .select("id, name, avatar_url_1")
+      .in("id", personaIds);
+
+    if (personasError || !personas) {
+      return NextResponse.json({ error: "Persona not found" }, { status: 404 });
     }
 
-    return NextResponse.json(data, { status: 200 })
+    const result = calls.map((c) => ({
+      ...c,
+      persona: personas.find((p) => p.id === c.persona_id),
+    }));
+
+    return NextResponse.json(result, { status: 200 });
 }
 
 // ✅ DELETE: Delete calls for User
