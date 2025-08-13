@@ -127,10 +127,17 @@ export async function DELETE(req: NextRequest) {
   }
 
 }
+const CALL_MAX_TOKENS = Number(process.env.CALL_MAX_TOKENS) ?? 50
+const CALL_TEMPERATURE = Number(process.env.CALL_TEMPERATURE) ?? 0.4
 
-const CALL_MAX_TOKENS = 50;         // ~1 short sentence
-const CALL_TEMPERATURE = 0.4;       // tighter, less rambling
-const CALL_STOP = ["\n\n", "User:", "You:", "USER:", "ASSISTANT:"]; // early stops
+const CALL_STOP: string[] = (() => {
+  try {
+    return JSON.parse(process.env.CALL_STOP || "[]");
+  } catch {
+    console.warn("Invalid CALL_STOP env format, falling back to defaults");
+    return ["\n\n", "User:", "You:", "USER:", "ASSISTANT:"];
+  }
+})();
 
 // Helper: strip common emoji/pictographs (keeps ASCII + basic punctuation)
 const stripEmojis = (s: string) =>

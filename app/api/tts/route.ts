@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Optional latency tuning via env (safe no-ops if vendor ignores them)
-    const STREAM_LATENCY = process.env.ELEVEN_STREAM_LATENCY ?? "2" // "0"|"1"|"2" (2=lowest latency if supported)
-    const OUTPUT_FORMAT = process.env.ELEVEN_OUTPUT_FORMAT // e.g., "mp3_22050_32" for smaller payloads
+    const STREAM_LATENCY = process.env.ELEVEN_STREAM_LATENCY ?? "2"; // type: string
+    const OUTPUT_FORMAT = process.env.ELEVEN_OUTPUT_FORMAT || "mp3_22050_32";
 
     try {
         const supabase = createClient()
@@ -68,9 +68,11 @@ export async function POST(req: NextRequest) {
         }
         console.log("[TTS] persona.voice_id", persona.voice_id)
 
+        const ELEVENLAB_VOICE_MODEL = process.env.ELEVENLAB_VOICE_MODEL ?? "eleven_multilingual_v2"
+
         // 5) Prepare payload
         const vc = persona.voice_config ?? {}
-        const modelId = "eleven_turbo_v2"
+        const modelId = ELEVENLAB_VOICE_MODEL
         const payload = {
             text,
             model_id: modelId,
