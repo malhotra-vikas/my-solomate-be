@@ -93,15 +93,17 @@ export async function POST(req: NextRequest) {
 
     // 5. Generate AI response using OpenAI
     const { text: aiResponseText } = await generateText({
-      model: aiSdkOpenai("gpt-4o"),
+      model: aiSdkOpenai("gpt-4o-mini"),
       messages: messagesForAI,
     })
+
+    const ELEVENLAB_VOICE_MODEL = process.env.ELEVENLAB_VOICE_MODEL ?? "eleven_multilingual_v2"
 
     // 6. Text-to-Speech (ElevenLabs)
     const audioStream = await elevenlabs.generate({
       voice_id: persona.voice_id,
       text: aiResponseText,
-      model_id: "eleven_multilingual_v2", // Or another suitable model
+      model_id: ELEVENLAB_VOICE_MODEL, // Or another suitable model
       voice_settings: {
         stability: 0.7,
         similarity_boost: 0.8,
