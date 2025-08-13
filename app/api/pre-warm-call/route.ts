@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { aiSdkOpenai, generateText } from "@/lib/openai";
+import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 
 const STREAM_LATENCY = process.env.ELEVEN_STREAM_LATENCY ?? "2";     // "0" | "1" | "2"
 const OUTPUT_FORMAT = process.env.ELEVEN_OUTPUT_FORMAT || "mp3_22050_32";
@@ -15,7 +16,10 @@ const CALL_STOP: string[] = (() => {
     }
 })();
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+    const userId = await getUserIdFromRequest(req)
+    if (!userId) return NextResponse.json({ error: "Unauthorized request or Token Expired" }, { status: 401 })
+
     try {
         if (!ELEVEN_API_KEY) {
             return NextResponse.json(

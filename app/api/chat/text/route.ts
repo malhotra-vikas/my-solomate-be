@@ -324,6 +324,13 @@ export async function POST(req: NextRequest) {
       { role: "user" as const, content: message },
     ];
 
+    if (isCall) {
+      messagesForAI.unshift({
+        role: "system" as const,
+        content: "You are a helpful assistant. In calls, reply in ≤ 18 words."
+      });
+    }
+
     // ---------- Build generation options ----------
     const generationOptions = isCall
       ? {
