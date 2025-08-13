@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     const hasPremium = subscriptions.some(s =>
-        ["silver", "premium", "gold", "platinum"].includes(s.tier)
+        ["silver", "premium", "gold", "platinum", "add_on"].includes(s.tier)
     )
     const deductionOrder = hasPremium ? TIER_PRIORITY.premiumUser : TIER_PRIORITY.freeUser
 
