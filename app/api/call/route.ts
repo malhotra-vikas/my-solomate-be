@@ -18,7 +18,9 @@ export async function GET(req: NextRequest) {
     const { data: calls, error } = await supabase
       .from("calls")
       .select("*")
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10);
 
     if (error || !calls) {
       return NextResponse.json({ error: "Calls not found" }, { status: 404 });
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest) {
     try {
         const { personaId, talkTimeSeconds } = await req.json()
 
-        if (!personaId || !talkTimeSeconds) {
+        if (!personaId || talkTimeSeconds === null) {
             return NextResponse.json({ error: "Persona ID is required" }, { status: 400 })
         }
         const supabase = createClient()
