@@ -1,0 +1,165 @@
+import { createClient } from "@/lib/supabase";
+import { NextRequest, NextResponse } from "next/server";
+
+const allowedOrigin = "http://localhost:3001" || "http://localhost:3000"; 
+
+// GET - get all persona list
+export async function GET(req: NextRequest) {
+    const supabase = createClient();
+
+    try {
+        const { data, error } = await supabase
+        .from("personas")
+        .select("*")
+        
+        console.log("🚀 ~ GET ~ error:", error);
+        if (error || !data) {
+            return NextResponse.json({error: "persona not found"}, { status: 400 })
+        }
+
+        return corsResponse(
+            NextResponse.json({
+            message: "Persona fetch Successfully",
+            count: data.length,
+            data
+        }, { status: 201 })
+        )
+
+    } catch (error) {
+        console.log("🚀 ~ GET ~ error:", error)
+        return corsResponse(NextResponse.json({ error: "Internal server error" }, { status: 500 }))
+    }
+}
+
+
+// POST - create new persona
+
+export async function POST(req: NextRequest) {
+    try {
+        const supabase = createClient();
+  
+      // Parse FormData (supports files)
+      const formData = await req.formData();
+  
+      // Collect text/JSON fields
+      const insertData: Record<string, any> = { };
+      formData.forEach((value, key) => {
+        if (typeof value === "string" && !key.startsWith("avatar_url_") && key !== "avatar_video_url") {
+          try {
+            insertData[key] = JSON.parse(value); // Parse JSON if possible
+          } catch {
+            insertData[key] = value;
+          }
+        }
+      });
+  
+      // Handle avatar uploads (avatar_url_1 to avatar_url_5)
+      for (let i = 1; i <= 5; i++) {
+        const file = formData.get(`avatar_url_${i}`) as File | null;
+        if (file) {
+          const fileName = `avatar_${i}_${Date.now()}.${file.name.split(".").pop()}`;
+          const { error: uploadError } = await supabase.storage
+            .from("personas-photo-video")
+            .upload(fileName, file, { cacheControl: "3600", upsert: true });
+  
+          if (uploadError) throw uploadError;
+  
+          const { data: publicUrlData } = supabase.storage
+            .from("personas-photo-video")
+            .getPublicUrl(fileName);
+  
+          insertData[`avatar_url_${i}`] = publicUrlData.publicUrl;
+        }
+      }
+  
+      // Handle avatar video upload
+    //   const videoFile = formData.get("avatar_video_url") as File | null;
+    //   if (videoFile) {
+    //     const fileName = `video_${Date.now()}.${videoFile.name.split(".").pop()}`;
+    //     const { error: uploadError } = await supabase.storage
+    //       .from("personas-photo-video")
+    //       .upload(fileName, videoFile, { cacheControl: "3600", upsert: true });
+  
+    //     if (uploadError) throw uploadError;
+  
+    //     const { data: publicUrlData } = supabase.storage
+    //       .from("personas-photo-video")
+    //       .getPublicUrl(fileName);
+  
+    //     insertData.avatar_video_url = publicUrlData.publicUrl;
+    //   }
+
+    // const videoFile = formData.get("avatar_video_url") as File | null;
+    // if (videoFile) {
+    //   const videoName = `video_${Date.now()}.${videoFile.name.split(".").pop()}`;
+    //   const { error: uploadError } = await supabase.storage
+    //     .from("personas-photo-video")
+    //     .upload(videoName, videoFile, { cacheControl: "3600", upsert: true, contentType: videoFile.type });
+
+    //   if (uploadError) throw uploadError;
+
+    //   // Create signed URL valid for 7 days
+    //   const { data: signedData, error: signedError } = await supabase.storage
+    //     .from("personas-photo-video")
+    //     .createSignedUrl(videoName, 60 * 60 * 24 * 7);
+
+    //   if (signedError) throw signedError;
+
+    //   insertData.avatar_video_url = signedData.signedUrl;
+    // }
+
+    const videoFile = formData.get("avatar_video_url") as File | null;
+    if (videoFile) {
+      const videoName = `video_${Date.now()}.${videoFile.name.split(".").pop()}`;
+
+      // Upload with correct Content-Type
+      const { error: uploadError } = await supabase.storage
+        .from("personas-photo-video")
+        .upload(videoName, videoFile, {
+          cacheControl: "3600",
+          upsert: true,
+          contentType: videoFile.type || "video/mp4",
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Create signed URL valid for 7 days
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from("personas-photo-video")
+        .createSignedUrl(videoName, 60 * 60 * 24 * 7);
+
+      if (signedError) throw signedError;
+
+      // Store signed URL in DB
+      insertData.avatar_video_url = signedData.signedUrl;
+    }
+  
+      // Insert into personas table
+      const { data, error: insertError } = await supabase
+        .from("personas")
+        .insert([insertData])
+        .select();
+  
+      if (insertError) throw insertError;
+  
+      return corsResponse(NextResponse.json({ message: "Persona created successfully", data }, { status: 201 }));
+    } catch (error: any) {
+      console.error("Error creating persona:", error);
+      return corsResponse(NextResponse.json({ error: error.message }, { status: 500 }))
+    }
+  }
+
+  export async function OPTIONS() {
+    return corsResponse(new Response(null, { status: 204 }));
+  }
+  
+  // Utility to add CORS headers
+  function corsResponse(res: Response) {
+    res.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+    res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+    return res;
+  }
