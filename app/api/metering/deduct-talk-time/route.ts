@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
     const hasPremium = subscriptions.some(s =>
         ["silver", "premium", "gold", "platinum", "add_on"].includes(s.tier)
     )
-    const deductionOrder = hasPremium ? TIER_PRIORITY.premiumUser : TIER_PRIORITY.freeUser
+    // const deductionOrder = hasPremium ? TIER_PRIORITY.premiumUser : TIER_PRIORITY.freeUser
+    const deductionOrder = ["silver", "premium", "gold", "platinum", "add_on", "free"]
 
     let remainingToDeduct = secondsToDeduct
     const deductions: {
