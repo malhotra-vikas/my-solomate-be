@@ -1,7 +1,19 @@
 import { createClient } from "@/lib/supabase";
+import { S3Client } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
-const allowedOrigin = "http://localhost:3001" || "http://localhost:3000"; 
+const allowedOrigin = "*"; 
+
+const s3 = new S3Client({
+  region: process.env.AWS_REGION!,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
+
+const BUCKET_NAME = process.env.AWS_PERSONA_BUCKET_NAME!;
+
 
 // GET - get all persona list
 export async function GET(req: NextRequest) {
@@ -19,7 +31,7 @@ export async function GET(req: NextRequest) {
 
         return corsResponse(
             NextResponse.json({
-            message: "Persona fetch Successfully",
+            message: "Persona Fetch Successfully",
             count: data.length,
             data
         }, { status: 201 })
@@ -52,6 +64,11 @@ export async function POST(req: NextRequest) {
           }
         }
       });
+      
+      console.log("🚀 ~ POST ~ insertData:", insertData)
+
+      const personaName = insertData.name || "unknown_persona";
+      console.log("🚀 ~ POST ~ personaName:", personaName)
   
       // Handle avatar uploads (avatar_url_1 to avatar_url_5)
       for (let i = 1; i <= 5; i++) {
