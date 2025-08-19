@@ -257,7 +257,8 @@ export async function POST(req: NextRequest) {
         .eq("persona_id", personaId)
         .gte("timestamp", new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString())
         .order("timestamp", { ascending: true })
-        .limit(isCall ? 6 : 20), // trimmed for calls
+//        .limit(isCall ? 6 : 20), // trimmed for calls
+        .limit(100), // Adding more context so the user knows more
     ]);
     const tDbAll1 = ms();
     console.log("[DB] batch", {
