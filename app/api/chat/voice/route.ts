@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       .eq("persona_id", personaId)
       .gte("timestamp", new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()) // Last 5 days
       .order("timestamp", { ascending: true })
-      .limit(20) // Limit to recent 20 messages for context
+      .limit(50) // Limit to recent 50 messages for context
 
     if (convError) {
       console.error("Error fetching recent conversations:", convError)

@@ -257,8 +257,8 @@ export async function POST(req: NextRequest) {
         .eq("persona_id", personaId)
         .gte("timestamp", new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString())
         .order("timestamp", { ascending: true })
-//        .limit(isCall ? 6 : 20), // trimmed for calls
-        .limit(100), // Adding more context so the user knows more
+        //        .limit(isCall ? 6 : 20), // trimmed for calls
+        .limit(700), // Adding more context so the user knows more
     ]);
     const tDbAll1 = ms();
     console.log("[DB] batch", {
@@ -328,7 +328,7 @@ export async function POST(req: NextRequest) {
     if (isCall) {
       messagesForAI.unshift({
         role: "system" as const,
-        content: "You are a helpful assistant. In calls, reply in ≤ 18 words."
+        content: "You are a helpful assistant. In calls, reply in ≤ 25 words."
       });
     }
 
@@ -393,6 +393,19 @@ export async function POST(req: NextRequest) {
       const after = aiResponse.length;
       const cap1 = ms();
       console.log("[CALL] post_cap", { before, after, cap_ms: Math.round(cap1 - cap0) });
+
+      try {
+        const tStore0 = ms();
+        await supabase.from("conversations").insert([
+          { user_id: userId, persona_id: personaId, role: "user", content: message, type: "call" },
+          { user_id: userId, persona_id: personaId, role: "assistant", content: aiResponse, type: "call" },
+        ]);
+        const tStore1 = ms();
+        console.log("[DB] store_conversation", { ms: Math.round(tStore1 - tStore0) });
+      } catch (err) {
+        console.log("[DB] store_conversation_failed", err);
+      }
+
     }
 
     const res = NextResponse.json(
