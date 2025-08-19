@@ -319,7 +319,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (isCall) {
-      enhancedPrompt = enhancedPrompt + "You must reply in ≤ 25 words."
+      enhancedPrompt = enhancedPrompt + "You must reply in ≤ 30 words."
     }
 
     const messagesForAI = [
