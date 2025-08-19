@@ -331,9 +331,6 @@ export async function POST(req: NextRequest) {
       { role: "user" as const, content: message },
     ];
 
-    console.log("[PROMPT] actual being sent ", enhancedPrompt)
-
-
     // ---------- Build generation options ----------
     const generationOptions = isCall
       ? {
