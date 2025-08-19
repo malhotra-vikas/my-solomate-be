@@ -308,13 +308,19 @@ export async function POST(req: NextRequest) {
       JSON.stringify((recentConversations || []).map((m: any) => ({ r: m.role, c: m.content })))
     );
     const promptBytes = bytes(enhancedPrompt);
+    console.log("[CHAT] assistnt conversation type - isCall", isCall);
 
     console.log("[PROMPT] sizes", {
       promptBytes,
       historyTurns,
       historyBytes,
       userMsgChars: message?.length ?? 0,
+      recentConversationLength: recentConversations?.length ?? 0
     });
+
+    if (isCall) {
+      enhancedPrompt = enhancedPrompt + "You must reply in ≤ 25 words."
+    }
 
     const messagesForAI = [
       { role: "system" as const, content: enhancedPrompt },
@@ -325,12 +331,8 @@ export async function POST(req: NextRequest) {
       { role: "user" as const, content: message },
     ];
 
-    if (isCall) {
-      messagesForAI.unshift({
-        role: "system" as const,
-        content: "You are a helpful assistant. In calls, reply in ≤ 25 words."
-      });
-    }
+    console.log("[PROMPT] actual being sent ", enhancedPrompt)
+
 
     // ---------- Build generation options ----------
     const generationOptions = isCall
@@ -401,9 +403,9 @@ export async function POST(req: NextRequest) {
           { user_id: userId, persona_id: personaId, role: "assistant", content: aiResponse, type: "call" },
         ]);
         const tStore1 = ms();
-        console.log("[DB] store_conversation", { ms: Math.round(tStore1 - tStore0) });
+        console.log("[DB] store_call transcript", { ms: Math.round(tStore1 - tStore0) });
       } catch (err) {
-        console.log("[DB] store_conversation_failed", err);
+        console.log("[DB] store_call transcript_failed", err);
       }
 
     }
