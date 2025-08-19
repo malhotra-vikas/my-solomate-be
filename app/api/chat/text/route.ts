@@ -398,10 +398,21 @@ export async function POST(req: NextRequest) {
 
       try {
         const tStore0 = ms();
-        await supabase.from("conversations").insert([
-          { user_id: userId, persona_id: personaId, role: "user", content: message, type: "call" },
-          { user_id: userId, persona_id: personaId, role: "assistant", content: aiResponse, type: "call" },
-        ]);
+
+        const { data, error } = await supabase
+          .from("conversations")
+          .insert([
+            { user_id: userId, persona_id: personaId, role: "user", content: message, type: "call" },
+            { user_id: userId, persona_id: personaId, role: "assistant", content: aiResponse, type: "call" },
+          ])
+          .select();
+
+        if (error) {
+          console.error("[DB] store_call insert_error", error);
+        } else {
+          console.log("[DB] store_call success", { rows: data.length });
+        }
+
         const tStore1 = ms();
         console.log("[DB] store_call transcript", { ms: Math.round(tStore1 - tStore0) });
       } catch (err) {
