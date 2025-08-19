@@ -402,8 +402,8 @@ export async function POST(req: NextRequest) {
         const { data, error } = await supabase
           .from("conversations")
           .insert([
-            { user_id: userId, persona_id: personaId, role: "user", content: message, type: "call" },
-            { user_id: userId, persona_id: personaId, role: "assistant", content: aiResponse, type: "call" },
+            { user_id: userId, persona_id: personaId, role: "user", content: message, type: "voice" },
+            { user_id: userId, persona_id: personaId, role: "assistant", content: aiResponse, type: "voice" },
           ])
           .select();
 
