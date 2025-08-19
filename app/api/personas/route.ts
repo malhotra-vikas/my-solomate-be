@@ -86,12 +86,10 @@ export async function GET(req: NextRequest, { params }: { params?: { id?: string
         console.error("Error fetching personas for user_id:", error)
         return NextResponse.json({ error: "Failed to fetch personas" }, { status: 500 })
       }
-      console.log("userPersonaRows", userPersonaRows)
-
       // Return all joined personas, including inactive
       const personas = (userPersonaRows ?? []).map(row => row.persona)
 
-      console.log("Personas for User being returned are ", personas)
+      console.log("Count of Personas for User being returned are ", personas.length ?? 0)
 
       return NextResponse.json(personas, { status: 200 })
     }
