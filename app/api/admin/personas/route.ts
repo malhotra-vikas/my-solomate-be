@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase";
-import { S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
 
 const allowedOrigin = "*"; 
@@ -88,42 +88,6 @@ export async function POST(req: NextRequest) {
           insertData[`avatar_url_${i}`] = publicUrlData.publicUrl;
         }
       }
-  
-      // Handle avatar video upload
-    //   const videoFile = formData.get("avatar_video_url") as File | null;
-    //   if (videoFile) {
-    //     const fileName = `video_${Date.now()}.${videoFile.name.split(".").pop()}`;
-    //     const { error: uploadError } = await supabase.storage
-    //       .from("personas-photo-video")
-    //       .upload(fileName, videoFile, { cacheControl: "3600", upsert: true });
-  
-    //     if (uploadError) throw uploadError;
-  
-    //     const { data: publicUrlData } = supabase.storage
-    //       .from("personas-photo-video")
-    //       .getPublicUrl(fileName);
-  
-    //     insertData.avatar_video_url = publicUrlData.publicUrl;
-    //   }
-
-    // const videoFile = formData.get("avatar_video_url") as File | null;
-    // if (videoFile) {
-    //   const videoName = `video_${Date.now()}.${videoFile.name.split(".").pop()}`;
-    //   const { error: uploadError } = await supabase.storage
-    //     .from("personas-photo-video")
-    //     .upload(videoName, videoFile, { cacheControl: "3600", upsert: true, contentType: videoFile.type });
-
-    //   if (uploadError) throw uploadError;
-
-    //   // Create signed URL valid for 7 days
-    //   const { data: signedData, error: signedError } = await supabase.storage
-    //     .from("personas-photo-video")
-    //     .createSignedUrl(videoName, 60 * 60 * 24 * 7);
-
-    //   if (signedError) throw signedError;
-
-    //   insertData.avatar_video_url = signedData.signedUrl;
-    // }
 
     const videoFile = formData.get("avatar_video_url") as File | null;
     if (videoFile) {
@@ -150,6 +114,42 @@ export async function POST(req: NextRequest) {
       // Store signed URL in DB
       insertData.avatar_video_url = signedData.signedUrl;
     }
+
+    // async function uploadToS3(file: File, keyPrefix: string) {
+    //   const ext = file.name.split(".").pop();
+    //   const fileName = `${personaName}/${keyPrefix}_${Date.now()}.${ext}`;
+    //   const arrayBuffer = await file.arrayBuffer();
+    //   const buffer = Buffer.from(arrayBuffer);
+
+    //   await s3.send(
+    //     new PutObjectCommand({
+    //       Bucket: BUCKET_NAME,
+    //       Key: fileName,
+    //       Body: buffer,
+    //       ContentType: file.type,
+    //       ACL: "public-read", // public URL
+    //     })
+    //   );
+
+    //   return `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+    // }
+
+    // // Handle avatar photos
+    // for (let i = 1; i <= 5; i++) {
+    //   const file = formData.get(`avatar_url_${i}`) as File | null;
+    //   if (file) {
+    //     const fileUrl = await uploadToS3(file, `avatar_${i}`);
+    //     insertData[`avatar_url_${i}`] = fileUrl;
+    //   }
+    // }
+
+    // // Handle avatar video
+    // const videoFile = formData.get("avatar_video_url") as File | null;
+    // if (videoFile) {
+    //   const videoUrl = await uploadToS3(videoFile, "video");
+    //   insertData.avatar_video_url = videoUrl;
+    // }
+
   
       // Insert into personas table
       const { data, error: insertError } = await supabase
