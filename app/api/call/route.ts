@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     const { data: personas, error: personasError } = await supabase
       .from("personas")
-      .select("id, name, avatar_url_1")
+      .select("*")
       .in("id", personaIds);
 
     if (personasError || !personas) {
