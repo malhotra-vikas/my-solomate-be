@@ -4,6 +4,7 @@ import { aiSdkOpenai, generateText } from "@/lib/openai"
 import { auth } from "@/lib/firebaseAdmin"
 import { findSimilarDialogExamples } from "@/lib/embeddings"
 import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
+import { queueNotificationToSQS } from "@/lib/notifications"
 
 // ✅ GET: Get single chat message by chatId
 export async function GET(req: NextRequest) {
@@ -224,12 +225,30 @@ export async function POST(req: NextRequest) {
       try {
         const tStore0 = ms();
         await supabase.from("conversations").insert([
-          { user_id: userId, persona_id: personaId, role: "assistant", content: aiSeed },
+          { user_id: userId, persona_id: personaId, role: "assistant", content: aiSeed, is_read_status: false },
         ]);
         const tStore1 = ms();
         console.log("[DB] store_seed", { ms: Math.round(tStore1 - tStore0) });
       } catch (err) {
         console.log("[DB] store_seed_failed", err);
+      }
+
+      try { 
+        
+        const results = await queueNotificationToSQS({
+            userId: userId,
+            title: `New message for you`,
+            body: `${persona.name} sent a message`,
+            type: "NEW_FEATURE_EVENT",
+            data: {
+              screen: "ChatList",
+            },
+            sendAt: new Date().toISOString() // Send immediately
+          })
+
+        console.log("Queued notifications:", userId, results)
+      } catch (err) {
+        console.error("Failed to queue notification:", err)
       }
 
       const res = NextResponse.json({ response: aiSeed }, { status: 200 });
@@ -330,9 +349,6 @@ export async function POST(req: NextRequest) {
       })),
       { role: "user" as const, content: message },
     ];
-
-    console.log("[PROMPT] actual being sent ", enhancedPrompt)
-
 
     // ---------- Build generation options ----------
     const generationOptions = isCall
