@@ -1,3 +1,4 @@
+import { queueNotificationToSQS } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
@@ -153,11 +154,49 @@ export async function POST(req: NextRequest) {
   
       // Insert into personas table
       const { data, error: insertError } = await supabase
-        .from("personas")
-        .insert([insertData])
-        .select();
-  
+      .from("personas")
+      .insert([insertData])
+      .select();
+      
       if (insertError) throw insertError;
+      console.log("🚀 ~ POST ~ data:", data)
+
+      try {
+        const { data: allUsers, error } = await supabase
+          .from("users")
+          .select("id")
+  
+        if (error || !allUsers) {
+          console.error("Failed to fetch users:", error)
+          return
+        }
+  
+        console.log("Need to send notifications to :", allUsers.length, " users. ")
+  
+        const notifications = allUsers.map(({ id }) =>
+          queueNotificationToSQS({
+            userId: id,
+            title: "New Persona Added to SoloMate!",
+            body: `We have just added ${data[0].name} to SoloMate.`,
+            type: "NEW_FEATURE_EVENT",
+            data: {
+              screen: "PersonaDetails",
+              persona_id: data[0].id
+            },
+            sendAt: new Date().toISOString() // Send immediately
+          })
+        )
+  
+        const results = await Promise.allSettled(notifications)
+        console.log("Queued notifications:", results.length, "results")
+  
+        const failures = results.filter(r => r.status === "rejected")
+        if (failures.length > 0) {
+          console.warn(`⚠️ ${failures.length} notifications failed`)
+        }
+      } catch (err) {
+        console.error("Failed to queue notification:", err)
+      }
   
       return corsResponse(NextResponse.json({ message: "Persona created successfully", data }, { status: 201 }));
     } catch (error: any) {

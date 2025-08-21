@@ -12,7 +12,7 @@
   "dependencies": {
     "@ai-sdk/openai": "latest",
     "@aws-sdk/client-s3": "^3.864.0",
-    "@aws-sdk/client-sqs": "^3.859.0",
+    "@aws-sdk/client-sqs": "^3.872.0",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",
