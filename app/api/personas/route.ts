@@ -47,26 +47,31 @@ export async function GET(req: NextRequest, { params }: { params?: { id?: string
 
     // ✅ 2. Get all personas EXCLUDING those already attached to currentUserId (Find Solo Mates)
     if (getAll) {
-      const [allPersonaRes, userPersonaRes] = await Promise.all([
-        supabase.from("personas").select("*"),
-        supabase
-          .from("user_personas")
-          .select("persona_id")
-          .eq("user_id", currentUserId),
-      ])
-
-      const { data: allPersonas, error: allError } = allPersonaRes
-      const { data: userPersonas, error: userError } = userPersonaRes
-
+      // Fetch all personas
+      const { data: allPersonas, error: allError } = await supabase.from("personas").select("*");
+      
+      // Fetch personas attached to the user
+      const { data: userPersonas, error: userError } = await supabase
+        .from("user_personas")
+        .select("persona_id")
+        .eq("user_id", currentUserId);
+    
       if (allError || userError) {
-        console.error("Error fetching all/user personas:", allError || userError)
-        return NextResponse.json({ error: "Failed to fetch personas" }, { status: 500 })
+        console.error("Error fetching personas:", allError || userError);
+        return NextResponse.json({ error: "Failed to fetch personas" }, { status: 500 });
       }
-
-      const attachedPersonaIds = new Set(userPersonas.map(p => p.persona_id))
-      const unlinkedPersonas = allPersonas.filter(p => !attachedPersonaIds.has(p.id))
-
-      return NextResponse.json(unlinkedPersonas, { status: 200 })
+    
+      // Make a Set of attached persona IDs
+      const attachedPersonaIds = new Set(userPersonas.map(p => p.persona_id));
+    
+      // Sort personas: unattached first, attached last
+      const sortedPersonas = allPersonas.sort((a, b) => {
+        const aAttached = attachedPersonaIds.has(a.id) ? 1 : 0;
+        const bAttached = attachedPersonaIds.has(b.id) ? 1 : 0;
+        return aAttached - bAttached; // unattached (0) comes first
+      });
+    
+      return NextResponse.json(sortedPersonas, { status: 200 });
     }
 
     // ✅ 3. Get all attached personas for a given user_id (My Solo Mates)
@@ -81,12 +86,10 @@ export async function GET(req: NextRequest, { params }: { params?: { id?: string
         console.error("Error fetching personas for user_id:", error)
         return NextResponse.json({ error: "Failed to fetch personas" }, { status: 500 })
       }
-      console.log("userPersonaRows", userPersonaRows)
-
       // Return all joined personas, including inactive
       const personas = (userPersonaRows ?? []).map(row => row.persona)
 
-      console.log("Personas for User being returned are ", personas)
+      console.log("Count of Personas for User being returned are ", personas.length ?? 0)
 
       return NextResponse.json(personas, { status: 200 })
     }

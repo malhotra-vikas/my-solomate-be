@@ -276,7 +276,8 @@ export async function POST(req: NextRequest) {
         .eq("persona_id", personaId)
         .gte("timestamp", new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString())
         .order("timestamp", { ascending: true })
-        .limit(isCall ? 6 : 20), // trimmed for calls
+        //        .limit(isCall ? 6 : 20), // trimmed for calls
+        .limit(700), // Adding more context so the user knows more
     ]);
     const tDbAll1 = ms();
     console.log("[DB] batch", {
@@ -326,13 +327,19 @@ export async function POST(req: NextRequest) {
       JSON.stringify((recentConversations || []).map((m: any) => ({ r: m.role, c: m.content })))
     );
     const promptBytes = bytes(enhancedPrompt);
+    console.log("[CHAT] assistnt conversation type - isCall", isCall);
 
     console.log("[PROMPT] sizes", {
       promptBytes,
       historyTurns,
       historyBytes,
       userMsgChars: message?.length ?? 0,
+      recentConversationLength: recentConversations?.length ?? 0
     });
+
+    if (isCall) {
+      enhancedPrompt = enhancedPrompt + "You must reply in ≤ 30 words."
+    }
 
     const messagesForAI = [
       { role: "system" as const, content: enhancedPrompt },
@@ -342,13 +349,6 @@ export async function POST(req: NextRequest) {
       })),
       { role: "user" as const, content: message },
     ];
-
-    if (isCall) {
-      messagesForAI.unshift({
-        role: "system" as const,
-        content: "You are a helpful assistant. In calls, reply in ≤ 18 words."
-      });
-    }
 
     // ---------- Build generation options ----------
     const generationOptions = isCall
@@ -411,6 +411,30 @@ export async function POST(req: NextRequest) {
       const after = aiResponse.length;
       const cap1 = ms();
       console.log("[CALL] post_cap", { before, after, cap_ms: Math.round(cap1 - cap0) });
+
+      try {
+        const tStore0 = ms();
+
+        const { data, error } = await supabase
+          .from("conversations")
+          .insert([
+            { user_id: userId, persona_id: personaId, role: "user", content: message, type: "voice" },
+            { user_id: userId, persona_id: personaId, role: "assistant", content: aiResponse, type: "voice" },
+          ])
+          .select();
+
+        if (error) {
+          console.error("[DB] store_call insert_error", error);
+        } else {
+          console.log("[DB] store_call success", { rows: data.length });
+        }
+
+        const tStore1 = ms();
+        console.log("[DB] store_call transcript", { ms: Math.round(tStore1 - tStore0) });
+      } catch (err) {
+        console.log("[DB] store_call transcript_failed", err);
+      }
+
     }
 
     const res = NextResponse.json(

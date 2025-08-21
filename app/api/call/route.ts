@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(20);
 
     if (error || !calls) {
       return NextResponse.json({ error: "Calls not found" }, { status: 404 });

@@ -19,6 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { personaId: s
       .from("conversations")
       .select("*")
       .eq("user_id", userId)
+      .eq("type", "text") // Fetch only Texts in the conversation History
       .order("timestamp", { ascending: false })
 
     if (personaId) {
