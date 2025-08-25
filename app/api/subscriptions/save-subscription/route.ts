@@ -28,54 +28,91 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { stripeSubscriptionId } = await req.json();
-    if (!stripeSubscriptionId) {
+    const { productId, tier, addonMinute } = await req.json();
+
+    if (!productId || !tier) {
       return NextResponse.json(
-        { error: "Strip subscription id required" },
+        { error: "productId and tier are required" },
         { status: 400 }
       );
     }
-    const session =
-      await stripe.checkout.sessions.retrieve(stripeSubscriptionId);
-    console.log("🚀 ~ POST ~ session:", session);
 
-    const tier = session?.metadata?.tier;
-    const addonMinute = session?.metadata?.totalMinute ? +session?.metadata?.totalMinute : 1
+    // const session =
+    //   await stripe.checkout.sessions.retrieve(productId);
+    // console.log("🚀 ~ POST ~ session:", session);
+
+    // const tier = session?.metadata?.tier;
+    // const addonMinute = session?.metadata?.totalMinute ? +session?.metadata?.totalMinute : 1
     const supabase = createClient();
 
     let insertData: any = {
       user_id: userId,
       tier,
       status: "active",
-      stripe_subscription_id: null,
+      iap_product_id: productId,
       talk_seconds_remaining:
         tier === "premium" ? (60 * 60) : tier === "silver" ? (30 * 60) : +(addonMinute * 60).toFixed(),
     };
 
-    if (tier === "add_on") {
-      // For one-time purchase, store payment_intent instead of subscription
-      insertData.stripe_subscription_id = session.payment_intent;
-    } else if (session.subscription) {
-      const subscriptionId = session.subscription as string;
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    if (tier !== "add_on") {
+      const now = new Date();
+      const oneMonthLater = new Date(now.setMonth(now.getMonth() + 1));
+      insertData.subscription_end_date = formatToSupabaseTimestamp(oneMonthLater);
+    }
+    //   // For one-time purchase, store payment_intent instead of subscription
+    //   insertData.stripe_subscription_id = session.payment_intent;
+    // } else if (session.subscription) {
+    //   const subscriptionId = session.subscription as string;
+    //   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     
-      const endData = subscription.items.data.find(
-        (item) => item.subscription === subscriptionId
+    //   const endData = subscription.items.data.find(
+    //     (item) => item.subscription === subscriptionId
+    //   );
+    
+    //   const formattedStartDate = formatToSupabaseTimestamp(
+    //     new Date(endData?.current_period_end! * 1000)
+    //   );
+    
+    //   insertData.stripe_subscription_id = subscriptionId;
+    //   insertData.subscription_end_date = formattedStartDate;
+    // }
+
+    const { data: existingSub, error } = await supabase
+    .from("subscriptions")
+    .select("*")
+    .eq("user_id", userId)
+    .in("tier", ["silver", "premium"])
+    .eq("status", "active")
+    .maybeSingle();
+
+    if (existingSub?.iap_product_id) {
+      if (!existingSub?.iap_product_id) {
+        throw new Error("No subscription item found.");
+      }
+
+      // Update Supabase record
+      try {
+        const { data, error: newRecError } = await supabase
+        .from("subscriptions")
+        .update({ tier, talk_seconds_remaining: tier === "silver" ? (30 * 60) : (60 * 60), iap_product_id: productId })
+        .eq("id", existingSub.id)
+        .select()
+        .single();
+
+      return NextResponse.json(
+        { message: "Subscription plan update successfully", data },
+        { status: 200 }
       );
-    
-      const formattedStartDate = formatToSupabaseTimestamp(
-        new Date(endData?.current_period_end! * 1000)
-      );
-    
-      insertData.stripe_subscription_id = subscriptionId;
-      insertData.subscription_end_date = formattedStartDate;
+      } catch (error) {
+        console.log("🚀 ~ POST ~ error:", error)
+      }
     }
 
-    const { data, error } = await supabase
-    .from("subscriptions")
-    .insert(insertData)
-    .select()
-    .single();
+    const { data, error: newRecError } = await supabase
+      .from("subscriptions")
+      .insert(insertData)
+      .select()
+      .single();
 
     if (error) {
       console.error("Error Save subscription:", error);
@@ -90,7 +127,7 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (error: any) {
-    console.error("Register device error:", error.message);
+    console.error("Save subscription error:", error.message);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -33,52 +33,52 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const enriched = await Promise.all(
-      subscriptions.map(async (sub) => {
-        if (!sub.stripe_subscription_id || sub.tier === "free") {
-          return {
-            ...sub,
-            price: 0,
-            currency: "USD",
-          };
-        }
+    // const enriched = await Promise.all(
+    //   subscriptions.map(async (sub) => {
+    //     if (!sub.stripe_subscription_id || sub.tier === "free") {
+    //       return {
+    //         ...sub,
+    //         price: 0,
+    //         currency: "USD",
+    //       };
+    //     }
 
-        try {
-          if (sub.tier === "add_on" && sub.stripe_subscription_id) {
-            const paymentIntent = await stripe.paymentIntents.retrieve(sub.stripe_subscription_id);
-            console.log("🚀 ~ GET ~ paymentIntent:", paymentIntent)
-            return {
-              ...sub,
-              price: (paymentIntent.amount_received ?? 0) / 100,
-              currency: paymentIntent.currency?.toUpperCase() ?? "USD",
-            };
-          }
+    //     try {
+    //       if (sub.tier === "add_on" && sub.stripe_subscription_id) {
+    //         const paymentIntent = await stripe.paymentIntents.retrieve(sub.stripe_subscription_id);
+    //         console.log("🚀 ~ GET ~ paymentIntent:", paymentIntent)
+    //         return {
+    //           ...sub,
+    //           price: (paymentIntent.amount_received ?? 0) / 100,
+    //           currency: paymentIntent.currency?.toUpperCase() ?? "USD",
+    //         };
+    //       }
           
-          const stripeSub = await stripe.subscriptions.retrieve(
-            sub.stripe_subscription_id
-          );
+    //       const stripeSub = await stripe.subscriptions.retrieve(
+    //         sub.stripe_subscription_id
+    //       );
 
-          const price = stripeSub.items?.data[0]?.price;
-          const amount = price?.unit_amount ?? 0;
-          const currency = price?.currency?.toUpperCase() ?? "USD";
+    //       const price = stripeSub.items?.data[0]?.price;
+    //       const amount = price?.unit_amount ?? 0;
+    //       const currency = price?.currency?.toUpperCase() ?? "USD";
 
-          return {
-            ...sub,
-            price: amount / 100,
-            currency,
-          };
-        } catch (err) {
-          console.error("Stripe subscription fetch failed:", err);
-          return {
-            ...sub,
-            price: null,
-            currency: null,
-          };
-        }
-      })
-    );
+    //       return {
+    //         ...sub,
+    //         price: amount / 100,
+    //         currency,
+    //       };
+    //     } catch (err) {
+    //       console.error("Stripe subscription fetch failed:", err);
+    //       return {
+    //         ...sub,
+    //         price: null,
+    //         currency: null,
+    //       };
+    //     }
+    //   })
+    // );
 
-    return NextResponse.json({data: enriched}, { status: 200 });
+    return NextResponse.json({data: subscriptions}, { status: 200 });
   } catch (error) {
     console.error("Error while getting subscription history:", error?.message)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
