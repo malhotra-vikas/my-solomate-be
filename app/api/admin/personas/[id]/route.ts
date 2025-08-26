@@ -60,21 +60,29 @@ export async function PUT(
         // Upload video file (avatar_video_url)
         const videoFile = formData.get("avatar_video_url") as File | null;
         if (videoFile) {
-            const fileName = `video_${Date.now()}.${videoFile.name.split(".").pop()}`;
-            const { data, error } = await supabase.storage
-                .from("personas-photo-video")
-                .upload(fileName, videoFile, {
-                    cacheControl: "3600",
-                    upsert: true,
-                });
+          const videoName = `video_${Date.now()}.${videoFile.name.split(".").pop()}`;
 
-            if (error) throw error;
+          // Upload with correct Content-Type
+          const { error: uploadError } = await supabase.storage
+            .from("personas-photo-video")
+            .upload(videoName, videoFile, {
+              cacheControl: "3600",
+              upsert: true,
+              contentType: videoFile.type || "video/mp4",
+            });
 
-            const { data: publicUrlData } = supabase.storage
-                .from("personas-photo-video")
-                .getPublicUrl(fileName);
+          if (uploadError) throw uploadError;
 
-            updates.avatar_video_url = publicUrlData.publicUrl;
+          // Create signed URL valid for 7 days
+          const { data: signedData, error: signedError } =
+            await supabase.storage
+              .from("personas-photo-video")
+              .createSignedUrl(videoName, 60 * 60 * 24 * 7);
+
+          if (signedError) throw signedError;
+
+          // Store signed URL in DB
+          updates.avatar_video_url = signedData.signedUrl;
         }
 
         // Update database
