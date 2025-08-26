@@ -290,6 +290,17 @@ export async function POST(req: NextRequest) {
     // Build prompt (unchanged logic; we only log sizes)
     let enhancedPrompt = persona.initial_prompt;
 
+    // Add user personalization (name + conversation summary)
+    const firstName = userProfile?.name
+      ? userProfile.name.trim().split(" ")[0]
+      : "hey"; // fallback if name missing
+
+    // Add user personalization (name + conversation summary)
+    if (firstName) {
+      enhancedPrompt += `\n\nThe user's first name is ${firstName}. Use it naturally to personalize responses.`;
+    }
+
+
     if (similarExamples.length > 0) {
       enhancedPrompt += "\n\nHere are some examples of how you should respond based on your training:\n";
       similarExamples.forEach((example, index) => {
@@ -320,6 +331,14 @@ export async function POST(req: NextRequest) {
 
     if (isCall) {
       enhancedPrompt = enhancedPrompt + "You must reply in ≤ 30 words."
+    }
+
+    if (recentConversations && recentConversations.length > 0) {
+      const shortHistory = recentConversations
+        .slice(-50) // keep last 5 turns for brevity
+        .map((m: any) => `${m.role}: ${m.content}`)
+        .join(" | ");
+      enhancedPrompt += `\n\nRelevant past conversations: ${shortHistory}`;
     }
 
     const messagesForAI = [
