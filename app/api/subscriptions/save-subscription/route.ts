@@ -51,64 +51,56 @@ export async function POST(req: NextRequest) {
       status: "active",
       iap_product_id: productId,
       talk_seconds_remaining:
-        tier === "premium" ? (60 * 60) : tier === "silver" ? (30 * 60) : +(addonMinute * 60).toFixed(),
+        tier === "premium"
+          ? 60 * 60
+          : tier === "silver"
+            ? 30 * 60
+            : +(addonMinute * 60).toFixed(),
     };
 
     if (tier !== "add_on") {
       const now = new Date();
       const oneMonthLater = new Date(now.setMonth(now.getMonth() + 1));
-      insertData.subscription_end_date = formatToSupabaseTimestamp(oneMonthLater);
-    }
-    //   // For one-time purchase, store payment_intent instead of subscription
-    //   insertData.stripe_subscription_id = session.payment_intent;
-    // } else if (session.subscription) {
-    //   const subscriptionId = session.subscription as string;
-    //   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    
-    //   const endData = subscription.items.data.find(
-    //     (item) => item.subscription === subscriptionId
-    //   );
-    
-    //   const formattedStartDate = formatToSupabaseTimestamp(
-    //     new Date(endData?.current_period_end! * 1000)
-    //   );
-    
-    //   insertData.stripe_subscription_id = subscriptionId;
-    //   insertData.subscription_end_date = formattedStartDate;
-    // }
+      insertData.subscription_end_date =
+        formatToSupabaseTimestamp(oneMonthLater);
 
-    const { data: existingSub, error } = await supabase
-    .from("subscriptions")
-    .select("*")
-    .eq("user_id", userId)
-    .in("tier", ["silver", "premium"])
-    .eq("status", "active")
-    .maybeSingle();
-
-    if (existingSub?.iap_product_id) {
-      if (!existingSub?.iap_product_id) {
-        throw new Error("No subscription item found.");
-      }
-
-      // Update Supabase record
-      try {
-        const { data, error: newRecError } = await supabase
+      const { data: existingSub, error } = await supabase
         .from("subscriptions")
-        .update({ tier, talk_seconds_remaining: tier === "silver" ? (30 * 60) : (60 * 60), iap_product_id: productId })
-        .eq("id", existingSub.id)
-        .select()
-        .single();
+        .select("*")
+        .eq("user_id", userId)
+        .in("tier", ["silver", "premium"])
+        .eq("status", "active")
+        .maybeSingle();
 
-      return NextResponse.json(
-        { message: "Subscription plan update successfully", data },
-        { status: 200 }
-      );
-      } catch (error) {
-        console.log("🚀 ~ POST ~ error:", error)
+      if (existingSub?.iap_product_id) {
+        if (!existingSub?.iap_product_id) {
+          throw new Error("No subscription item found.");
+        }
+
+        // Update Supabase record
+        try {
+          const { data, error: newRecError } = await supabase
+            .from("subscriptions")
+            .update({
+              tier,
+              talk_seconds_remaining: tier === "silver" ? 30 * 60 : 60 * 60,
+              iap_product_id: productId,
+            })
+            .eq("id", existingSub.id)
+            .select()
+            .single();
+
+          return NextResponse.json(
+            { message: "Subscription plan update successfully", data },
+            { status: 200 }
+          );
+        } catch (error) {
+          console.log("🚀 ~ POST ~ error:", error);
+        }
       }
     }
 
-    const { data, error: newRecError } = await supabase
+    const { data, error } = await supabase
       .from("subscriptions")
       .insert(insertData)
       .select()
@@ -126,6 +118,7 @@ export async function POST(req: NextRequest) {
       {data: data.tier === 'add_on' ? {...data, addonMinute: +addonMinute.toFixed()} : data, message: "Subscription data saved successfully!" },
       { status: 200 }
     );
+ 
   } catch (error: any) {
     console.error("Save subscription error:", error.message);
     return NextResponse.json(
