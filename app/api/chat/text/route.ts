@@ -391,6 +391,8 @@ export async function POST(req: NextRequest) {
         const tStore0 = ms();
         await supabase.from("conversations").insert([
           { user_id: userId, persona_id: personaId, role: "user", content: message },
+        ]);
+        await supabase.from("conversations").insert([
           { user_id: userId, persona_id: personaId, role: "assistant", content: aiResponse },
         ]);
         const tStore1 = ms();
