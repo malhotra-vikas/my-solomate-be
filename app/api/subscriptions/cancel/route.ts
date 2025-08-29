@@ -20,59 +20,39 @@ export async function POST(req: NextRequest) {
   const supabase = createClient();
 
   try {
-    // if (stripeSubscriptionId && userId) {
-    //   const canceledSub = await stripe.subscriptions.cancel(stripeSubscriptionId);
-    //   console.log("Stripe subscription cancelled:", canceledSub);
+    if (stripeSubscriptionId && userId) {
+      const { error: deleteError } = await supabase
+        .from("subscriptions")
+        .update({ status: "cancelled" })
+        .eq("original_transaction_id", originalTransactionId)
+        .eq("iap_product_id", stripeSubscriptionId);
 
-    //   const { error: dbError, data: dbUpdateData } = await supabase
-    //     .from("subscriptions")
-    //     .update({ status: "cancelled", subscription_end_date: new Date().toISOString() })
-    //     .eq("id", id);
-
-    //   if (dbError) {
-    //     console.error("Supabase update error:", dbError);
-    //     return NextResponse.json({ error: "DB update failed" }, { status: 500 });
-    //   }
-
-    //   return NextResponse.json({
-    //     message: "Subscription cancelled successfully",
-    //     dbUpdateData,
-    //   });
-    // }
+      if (deleteError) {
+        console.error("Supabase update error:", deleteError);
+        return NextResponse.json(
+          { error: "DB update failed" },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({
+        message: "Subscription cancelled successfully",
+      });
+    }
 
     // Case 2: If stripeSubscriptionId and id are NOT provided, cancel all active subscriptions for this user
-    // const { data: activeSubs, error: fetchError } = await supabase
-    //   .from("subscriptions")
-    //   .select("*")
-    //   .eq("user_id", userId)
-    //   .eq("status", "active");
+    const { data: activeSubs, error: fetchError } = await supabase
+      .from("subscriptions")
+      .delete()
+      .eq("user_id", userId)
+      .eq("status", "active");
 
-    // if (fetchError) {
-    //   console.error("Failed to fetch active subscriptions:", fetchError);
-    //   return NextResponse.json({ error: "Failed to fetch subscriptions" }, { status: 500 });
-    // }
-
-    // if (!activeSubs || activeSubs.length === 0) {
-    //   return NextResponse.json({
-    //     message: "No active subscriptions found for this user.",
-    //   });
-    // }
-
-    // for (const sub of activeSubs) {
-        // if (sub.tier !== "add_on") {
-        //   await stripe.subscriptions.cancel(sub.stripe_subscription_id);
-        // }
-
-        const { error: deleteError } = await supabase
-          .from("subscriptions")
-          .update({ status: "cancelled" })
-          .eq("original_transaction_id", originalTransactionId)
-          .eq("iap_product_id", stripeSubscriptionId);
-
-        if (deleteError) {
-          console.error(`Failed to cancel subscription ID ${id}:`, deleteError);
-        }
-    // }
+    if (fetchError) {
+      console.error("Failed to fetch active subscriptions:", fetchError);
+      return NextResponse.json(
+        { error: "Failed to fetch subscriptions" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       message: "Active subscriptions cancelled and deleted",
