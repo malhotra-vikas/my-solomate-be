@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { productId, tier, addonMinute } = await req.json();
+    const { productId, tier, addonMinute, originalTransactionId } = await req.json();
 
     if (!productId || !tier) {
       return NextResponse.json(
@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
       const oneMonthLater = new Date(now.setMonth(now.getMonth() + 1));
       insertData.subscription_end_date =
         formatToSupabaseTimestamp(oneMonthLater);
+      insertData.original_transaction_id = originalTransactionId  
 
       const { data: existingSub, error } = await supabase
         .from("subscriptions")
