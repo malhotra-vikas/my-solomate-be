@@ -210,11 +210,25 @@ export async function POST(req: NextRequest) {
       const tLLM0 = ms();
 
       // 5. Generate AI response using OpenAI
-      const completion = await openai.chat.completions.create({
-        model: chatModel as string, // or gpt-5 if you want
-        messages: messagesForAI,
-        temperature: 0.8,
-      });
+      let generationOptions: any;
+      if ((chatModel as string).startsWith("gpt-5")) {
+        // GPT-5 → no temperature, must use max_completion_tokens if you want a cap
+        generationOptions = {
+          model: chatModel as string,
+          messages: messagesForAI,
+          max_completion_tokens: 200, // or undefined if you don't want to cap
+        };
+      } else {
+        // GPT-4o → supports temperature and max_tokens
+        generationOptions = {
+          model: chatModel as string,
+          messages: messagesForAI,
+          max_tokens: 200, // adjust as needed
+          temperature: 0.8,
+        };
+      }
+
+      const completion = await openai.chat.completions.create(generationOptions);
 
       const aiSeed = completion.choices[0].message?.content ?? "";
 
@@ -376,18 +390,31 @@ export async function POST(req: NextRequest) {
     ];
 
     // ---------- Build generation options ----------
-    const generationOptions = isCall
-      ? {
-        model: chatModel as string, // or gpt-5 if you want
-        messages: messagesForAI,
-        max_completion_tokens: CALL_MAX_TOKENS,   // ✅ snake_case
-        temperature: CALL_TEMPERATURE,
-        stop: CALL_STOP,
+    let generationOptions: any;
+    if (isCall) {
+      // Check if model is GPT-5
+      if ((chatModel as string).startsWith("gpt-5")) {
+        generationOptions = {
+          model: chatModel as string,
+          messages: messagesForAI,
+          max_completion_tokens: CALL_MAX_TOKENS, // ✅ GPT-5 expects this
+          stop: CALL_STOP,
+        };
+      } else {
+        generationOptions = {
+          model: chatModel as string,
+          messages: messagesForAI,
+          max_tokens: CALL_MAX_TOKENS, // ✅ GPT-4 family expects this
+          temperature: CALL_TEMPERATURE,
+          stop: CALL_STOP,
+        };
       }
-      : {
-        model: chatModel as string, // or gpt-5 if you want
+    } else {
+      generationOptions = {
+        model: chatModel as string,
         messages: messagesForAI,
       };
+    }
 
     // LLM timing
     const tLLM0 = ms();

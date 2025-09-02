@@ -93,11 +93,25 @@ export async function POST(req: NextRequest) {
     ]
 
     // 5. Generate AI response using OpenAI
-    const completion = await openai.chat.completions.create({
-      model: chatModel as string, // or gpt-5 if you want
-      messages: messagesForAI,
-      temperature: 0.8,
-    });
+    let generationOptions: any;
+    if ((chatModel as string).startsWith("gpt-5")) {
+      // GPT-5 → no temperature, must use max_completion_tokens if you want a cap
+      generationOptions = {
+        model: chatModel as string,
+        messages: messagesForAI,
+        max_completion_tokens: 200, // or undefined if you don't want to cap
+      };
+    } else {
+      // GPT-4o → supports temperature and max_tokens
+      generationOptions = {
+        model: chatModel as string,
+        messages: messagesForAI,
+        max_tokens: 200, // adjust as needed
+        temperature: 0.8,
+      };
+    }
+
+    const completion = await openai.chat.completions.create(generationOptions;
 
     const aiResponseText = completion.choices[0].message?.content ?? "";
 

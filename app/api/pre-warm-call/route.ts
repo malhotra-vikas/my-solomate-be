@@ -37,16 +37,32 @@ export async function POST(req: NextRequest) {
         }
 
         // Kick both warmups in parallel
-        const llmWarm = openai.chat.completions.create({
-            model: chatModel as string, // or gpt-5 if you want
-            messages: [
-                { role: "system", content: "You are a helpful assistant. Respond very briefly." },
-                { role: "user", content: "Hi" },
-            ],
-            max_completion_tokens: 5,
-            temperature: 0,
-            stop: CALL_STOP,
-        });
+        let llmWarm: Promise<any>;
+
+        if ((chatModel as string).startsWith("gpt-5")) {
+            // GPT-5 → uses max_completion_tokens, no temperature
+            llmWarm = openai.chat.completions.create({
+                model: chatModel as string,
+                messages: [
+                    { role: "system", content: "You are a helpful assistant. Respond very briefly." },
+                    { role: "user", content: "Hi" },
+                ],
+                max_completion_tokens: 5,
+                stop: CALL_STOP,
+            });
+        } else {
+            // GPT-4o family → uses max_tokens + temperature
+            llmWarm = openai.chat.completions.create({
+                model: chatModel as string,
+                messages: [
+                    { role: "system", content: "You are a helpful assistant. Respond very briefly." },
+                    { role: "user", content: "Hi" },
+                ],
+                max_tokens: 5,
+                temperature: 0,
+                stop: CALL_STOP,
+            });
+        }
 
         // Prepare ElevenLabs request
         const qs = new URLSearchParams();
