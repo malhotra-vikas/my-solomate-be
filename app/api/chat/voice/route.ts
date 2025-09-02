@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       };
     }
 
-    const completion = await openai.chat.completions.create(generationOptions;
+    const completion = await openai.chat.completions.create(generationOptions);
 
     const aiResponseText = completion.choices[0].message?.content ?? "";
 
