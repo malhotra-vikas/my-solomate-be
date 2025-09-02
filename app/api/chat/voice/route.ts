@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
-import { aiSdkOpenai, generateText, openai } from "@/lib/openai"
+import { chatModel, openai } from "@/lib/openai"
+
 import { elevenlabs } from "@/lib/elevenlabs"
 import { auth } from "@/lib/firebaseAdmin"
 import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
@@ -92,10 +93,14 @@ export async function POST(req: NextRequest) {
     ]
 
     // 5. Generate AI response using OpenAI
-    const { text: aiResponseText } = await generateText({
-      model: aiSdkOpenai("gpt-4o-mini"),
+    const completion = await openai.chat.completions.create({
+      model: chatModel as string, // or gpt-5 if you want
       messages: messagesForAI,
-    })
+      temperature: 0.8,
+    });
+
+    const aiResponseText = completion.choices[0].message?.content ?? "";
+
 
     const ELEVENLAB_VOICE_MODEL = process.env.ELEVENLAB_VOICE_MODEL ?? "eleven_multilingual_v2"
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { aiSdkOpenai, generateText } from "@/lib/openai";
 import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
+import { chatModel, openai } from "@/lib/openai";
 
 const STREAM_LATENCY = process.env.ELEVEN_STREAM_LATENCY ?? "2";     // "0" | "1" | "2"
 const OUTPUT_FORMAT = process.env.ELEVEN_OUTPUT_FORMAT || "mp3_22050_32";
@@ -37,16 +37,16 @@ export async function POST(req: NextRequest) {
         }
 
         // Kick both warmups in parallel
-        const llmWarm = generateText({
-            model: aiSdkOpenai("gpt-4o-mini"),
+        const llmWarm = openai.chat.completions.create({
+            model: chatModel as string, // or gpt-5 if you want
             messages: [
-                { role: "system" as const, content: "You are a helpful assistant. Respond very briefly." },
-                { role: "user" as const, content: "Hi" },
+                { role: "system", content: "You are a helpful assistant. Respond very briefly." },
+                { role: "user", content: "Hi" },
             ],
-            maxTokens: 5,
+            max_tokens: 5,
             temperature: 0,
             stop: CALL_STOP,
-        } as any);
+        });
 
         // Prepare ElevenLabs request
         const qs = new URLSearchParams();

@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase"
-import { aiSdkOpenai, generateText } from "@/lib/openai"
 import { auth } from "@/lib/firebaseAdmin"
 import { findSimilarDialogExamples } from "@/lib/embeddings"
 import { getUserIdFromRequest } from "@/lib/extractUserFromRequest"
 import { queueNotificationToSQS } from "@/lib/notifications"
+import { openai, chatModel } from "@/lib/openai"
 
 // ✅ GET: Get single chat message by chatId
 export async function GET(req: NextRequest) {
@@ -208,10 +208,16 @@ export async function POST(req: NextRequest) {
       // LLM timing
       const promptBytes = bytes(enhancedPrompt);
       const tLLM0 = ms();
-      const { text: aiSeed } = await generateText({
-        model: aiSdkOpenai("gpt-4o-mini"),
+
+      // 5. Generate AI response using OpenAI
+      const completion = await openai.chat.completions.create({
+        model: chatModel as string, // or gpt-5 if you want
         messages: messagesForAI,
+        temperature: 0.8,
       });
+
+      const aiSeed = completion.choices[0].message?.content ?? "";
+
       const tLLM1 = ms();
 
       console.log("[LLM:init] done", {
@@ -233,18 +239,18 @@ export async function POST(req: NextRequest) {
         console.log("[DB] store_seed_failed", err);
       }
 
-      try { 
-        
+      try {
+
         const results = await queueNotificationToSQS({
-            userId: userId,
-            title: `New message for you`,
-            body: `${persona.name} sent a message`,
-            type: "NEW_FEATURE_EVENT",
-            data: {
-              screen: "ChatList",
-            },
-            sendAt: new Date().toISOString() // Send immediately
-          })
+          userId: userId,
+          title: `New message for you`,
+          body: `${persona.name} sent a message`,
+          type: "NEW_FEATURE_EVENT",
+          data: {
+            screen: "ChatList",
+          },
+          sendAt: new Date().toISOString() // Send immediately
+        })
 
         console.log("Queued notifications:", userId, results)
       } catch (err) {
@@ -372,24 +378,26 @@ export async function POST(req: NextRequest) {
     // ---------- Build generation options ----------
     const generationOptions = isCall
       ? {
-        model: aiSdkOpenai("gpt-4o-mini"),       // Faster, cheaper model for calls
+        model: chatModel as string, // or gpt-5 if you want
         messages: messagesForAI,
         maxTokens: CALL_MAX_TOKENS,
         temperature: CALL_TEMPERATURE,
         stop: CALL_STOP,
       }
       : {
-        model: aiSdkOpenai("gpt-4o-mini"),
+        model: chatModel as string, // or gpt-5 if you want
         messages: messagesForAI,
       };
 
     // LLM timing
     const tLLM0 = ms();
-    const result = await generateText(generationOptions as any);
+    const completion = await openai.chat.completions.create(generationOptions);
+
     const tLLM1 = ms();
 
-    let aiResponse = result.text ?? "";
-    const usage = (result as any).usage || {};
+    let aiResponse = completion.choices[0].message?.content ?? "";
+
+    const usage = (completion as any).usage || {};
 
     console.log("[LLM] done", {
       ms: Math.round(tLLM1 - tLLM0),

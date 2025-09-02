@@ -1,9 +1,9 @@
 import OpenAI from "openai"
-import { generateText, streamText } from "ai"
-import { openai as aiSdkOpenai } from "@ai-sdk/openai"
 
 export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-export { generateText, streamText, aiSdkOpenai }
+export const chatModel = process.env.OPENAI_CHAT_MODEL
+
+export const voiceModel = process.env.OPENAI_VOICE_MODEL
