@@ -9,7 +9,8 @@ const ELEVEN_API_KEY = process.env.ELEVENLABS_API_KEY;
 
 const CALL_STOP: string[] = (() => {
     try {
-        return JSON.parse(process.env.CALL_STOP || "[]");
+        const parsed = JSON.parse(process.env.CALL_STOP || "[]");
+        return Array.isArray(parsed) ? parsed.slice(0, 4) : [];
     } catch {
         console.warn("Invalid CALL_STOP env format, falling back to defaults");
         return ["\n\n", "User:", "You:", "ASSISTANT:"];
