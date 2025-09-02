@@ -12,7 +12,7 @@ const CALL_STOP: string[] = (() => {
         return JSON.parse(process.env.CALL_STOP || "[]");
     } catch {
         console.warn("Invalid CALL_STOP env format, falling back to defaults");
-        return ["\n\n", "User:", "You:", "USER:", "ASSISTANT:"];
+        return ["\n\n", "User:", "You:", "ASSISTANT:"];
     }
 })();
 
