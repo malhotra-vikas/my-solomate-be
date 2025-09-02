@@ -418,14 +418,22 @@ export async function POST(req: NextRequest) {
     // LLM timing
     const tLLM0 = ms();
     const completion = await openai.chat.completions.create(generationOptions);
-    
+
     const tLLM1 = ms();
 
     let aiResponse = completion.choices[0].message?.content ?? "";
 
     const usage = (completion as any).usage || {};
+    console.log("[LLM Raw] response", {
+      model: completion.model,
+      id: completion.id,
+      created: completion.created,
+      finish_reason: completion.choices[0].finish_reason,
+      message: completion.choices[0].message,
+      usage,
+    });
 
-    console.log("[LLM Raw], reponse is ", completion)
+    console.log("[LLM Choices] response:\n", JSON.stringify(completion.choices, null, 2));
 
     console.log("[LLM] done", {
       ms: Math.round(tLLM1 - tLLM0),
