@@ -47,8 +47,7 @@ export async function POST(req: NextRequest) {
                     { role: "system", content: "You are a helpful assistant. Respond very briefly." },
                     { role: "user", content: "Hi" },
                 ],
-                max_completion_tokens: 5,
-                stop: CALL_STOP,
+                max_completion_tokens: 5
             });
         } else {
             // GPT-4o family → uses max_tokens + temperature

@@ -397,8 +397,7 @@ export async function POST(req: NextRequest) {
         generationOptions = {
           model: chatModel as string,
           messages: messagesForAI,
-          max_completion_tokens: CALL_MAX_TOKENS, // ✅ GPT-5 expects this
-          stop: CALL_STOP,
+          max_completion_tokens: CALL_MAX_TOKENS // ✅ GPT-5 expects this
         };
       } else {
         generationOptions = {
