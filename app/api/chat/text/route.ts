@@ -380,7 +380,7 @@ export async function POST(req: NextRequest) {
       ? {
         model: chatModel as string, // or gpt-5 if you want
         messages: messagesForAI,
-        maxTokens: CALL_MAX_TOKENS,
+        max_tokens: CALL_MAX_TOKENS,   // ✅ snake_case
         temperature: CALL_TEMPERATURE,
         stop: CALL_STOP,
       }
