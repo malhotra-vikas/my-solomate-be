@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
 
         // Kick both warmups in parallel
         let llmWarm: Promise<any>;
+        let maxTokens = Number(process.env.CALL_MAX_TOKENS) ?? 200
 
         if ((chatModel as string).startsWith("gpt-5")) {
             // GPT-5 → uses max_completion_tokens, no temperature
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
                     { role: "system", content: "You are a helpful assistant. Respond very briefly." },
                     { role: "user", content: "Hi" },
                 ],
-                max_completion_tokens: 5
+                max_completion_tokens: maxTokens
             });
         } else {
             // GPT-4o family → uses max_tokens + temperature
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
                     { role: "system", content: "You are a helpful assistant. Respond very briefly." },
                     { role: "user", content: "Hi" },
                 ],
-                max_tokens: 5,
+                max_tokens: maxTokens,
                 temperature: 0,
                 stop: CALL_STOP,
             });

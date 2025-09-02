@@ -94,19 +94,21 @@ export async function POST(req: NextRequest) {
 
     // 5. Generate AI response using OpenAI
     let generationOptions: any;
+    let maxTokens = Number(process.env.CALL_MAX_TOKENS) ?? 200
+
     if ((chatModel as string).startsWith("gpt-5")) {
       // GPT-5 → no temperature, must use max_completion_tokens if you want a cap
       generationOptions = {
         model: chatModel as string,
         messages: messagesForAI,
-        max_completion_tokens: 200, // or undefined if you don't want to cap
+        max_completion_tokens: maxTokens, // or undefined if you don't want to cap
       };
     } else {
       // GPT-4o → supports temperature and max_tokens
       generationOptions = {
         model: chatModel as string,
         messages: messagesForAI,
-        max_tokens: 200, // adjust as needed
+        max_tokens: maxTokens, // adjust as needed
         temperature: 0.8,
       };
     }
