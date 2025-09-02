@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
                 { role: "system", content: "You are a helpful assistant. Respond very briefly." },
                 { role: "user", content: "Hi" },
             ],
-            max_tokens: 5,
+            max_completion_tokens: 5,
             temperature: 0,
             stop: CALL_STOP,
         });
