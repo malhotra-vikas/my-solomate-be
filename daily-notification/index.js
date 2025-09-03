@@ -16,7 +16,6 @@ async function sendDailyCheckins() {
   const { data: users, error: usersError } = await supabase
     .from('users')
     .select('id')
-    .eq("id", "106563909011843313243")
 
   if (usersError) {
     console.error('❌ Error fetching users:', usersError);
@@ -30,7 +29,7 @@ async function sendDailyCheckins() {
     const { data: mates, error: matesError } = await supabase
     .from('user_personas')
     .select('id, persona:personas(id, name), user: users(id, name, email)')
-    .eq('user_id', "106563909011843313243");
+    .eq('user_id', user.id);
     
     if (matesError) {
         console.error(`❌ Error fetching personas for user ${user.id}:`, matesError);

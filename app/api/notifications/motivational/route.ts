@@ -7,7 +7,7 @@ const allowedOrigin = "*";
 export async function POST(req: NextRequest) {
     try {
         const supabase = createClient();
-        const { title, body } = await req.json()
+        const { title, body, selectedScreen } = await req.json()
 
         const { data: allUsers, error } = await supabase
         .from("users")
@@ -21,16 +21,16 @@ export async function POST(req: NextRequest) {
       console.log("Need to send notifications to :", allUsers.length, " users. ")
 
       const notifications = allUsers.map(({ id }) =>
-        queueNotificationToSQS({
-          userId: id,
-          title: title,
-          body: body,
-          type: "NEW_FEATURE_EVENT",
-          data: {
-            screen: "",
-          },
-          sendAt: new Date().toISOString() // Send immediately
-        })
+       queueNotificationToSQS({
+        userId: '106563909011843313243',
+        title: title,
+        body: body,
+        type: "NEW_FEATURE_EVENT",
+        data: {
+          screen: selectedScreen,
+        },
+        sendAt: new Date().toISOString() // Send immediately
+      })
       )
 
       const results = await Promise.allSettled(notifications)
