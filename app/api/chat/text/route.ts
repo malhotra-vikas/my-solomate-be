@@ -148,6 +148,10 @@ const stripEmojis = (s: string) =>
     ""
   );
 
+// Helper: strip % $ # and other non-alphanumeric (except spaces and .,!?)
+const stripSpecialChars = (s: string) =>
+  s.replace(/[%$#@&*()[\]{}<>^~`|\\/:;"'=+]/g, "");
+
 
 // ✅ POST: Create a single chat message and persist it
 export async function POST(req: NextRequest) {
@@ -484,6 +488,7 @@ export async function POST(req: NextRequest) {
 
       console.log("Before Emojee strip", { aiResponse });
       aiResponse = stripEmojis(aiResponse);
+      aiResponse = stripSpecialChars(aiResponse);
       console.log("After Emojee strip", { aiResponse });
 
       const after = aiResponse.length;
