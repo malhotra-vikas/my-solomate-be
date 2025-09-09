@@ -8,11 +8,12 @@ export async function POST(req: NextRequest) {
     const body = await req.text()
     console.log("Debug login - Raw body:", body)
 
-    if (!body) {
+    // Guard against empty body or "undefined"
+    if (!body || body.trim() === "" || body.trim() === "undefined") {
       return NextResponse.json(
-        { error: "Empty request body" },
+        { error: "Empty or invalid request body" },
         { status: 400 }
-      );
+      )
     }
 
     let parsedBody
