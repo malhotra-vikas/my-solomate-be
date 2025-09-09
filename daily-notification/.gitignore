@@ -1,0 +1,44 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+/package-lock.json
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets
+secrets/mysolomate-firebase-adminsdk.json
+
+package-lock.json
+
+#Lambdas/notifications-delivery-lambda/lambda.zip
+#Lambdas/notifications-delivery-lambda/node_modules/
+
+Lambdas/*/node_modules/
+Lambdas/*/lambda.zip
+
+Lambdas/*/.DS_Store
+Lambdas/.DS_Store
+
+#Lambdas/user-deletion-lambda/.DS_Store
+#Lambdas/notifications-delivery-lambda/.DS_Store
