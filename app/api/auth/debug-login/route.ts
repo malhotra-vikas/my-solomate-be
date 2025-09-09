@@ -8,6 +8,13 @@ export async function POST(req: NextRequest) {
     const body = await req.text()
     console.log("Debug login - Raw body:", body)
 
+    if (!body) {
+      return NextResponse.json(
+        { error: "Empty request body" },
+        { status: 400 }
+      );
+    }
+
     let parsedBody
     try {
       parsedBody = JSON.parse(body)
