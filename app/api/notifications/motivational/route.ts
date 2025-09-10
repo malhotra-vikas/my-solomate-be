@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
       const notifications = allUsers.map(({ id }) =>
        queueNotificationToSQS({
-        userId: '106563909011843313243',
+        userId: id,
         title: title,
         body: body,
         type: "NEW_FEATURE_EVENT",
