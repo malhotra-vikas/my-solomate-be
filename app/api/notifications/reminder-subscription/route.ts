@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
     queueNotificationToSQS({
         userId: userId,
-        title: "Remainder subscription",
+        title: "SoloMate Talk Time running out",
         body: "recharge or purchase a subscription",
         type: "NEW_FEATURE_EVENT",
         data: {
