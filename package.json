@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "prestart": "npm run build",
+    "clean": "rimraf .next",
     "build": "next build",
+    "prestart": "npm run clean && npm run build",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start"
