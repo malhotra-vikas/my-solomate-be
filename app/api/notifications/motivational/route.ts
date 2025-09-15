@@ -7,7 +7,7 @@ const allowedOrigin = "*";
 export async function POST(req: NextRequest) {
     try {
         const supabase = createClient();
-        const { title, body, selectedScreen } = await req.json()
+        const { title, body, selectedScreen, links } = await req.json()
 
         const { data: allUsers, error } = await supabase
         .from("users")
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
         type: "NEW_FEATURE_EVENT",
         data: {
           screen: selectedScreen,
+          link: links?.[0] || null
         },
         sendAt: new Date().toISOString() // Send immediately
       })
