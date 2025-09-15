@@ -67,7 +67,13 @@ export async function POST(req: NextRequest) {
 
         // Prepare ElevenLabs request
         const qs = new URLSearchParams();
-        if (STREAM_LATENCY) qs.set("optimize_streaming_latency", STREAM_LATENCY);
+        //if (STREAM_LATENCY) qs.set("optimize_streaming_latency", STREAM_LATENCY);
+
+        // Only add optimize_streaming_latency if the model supports it
+        if (STREAM_LATENCY && ELEVENLAB_VOICE_MODEL === "eleven_turbo_v2") {
+            qs.set("optimize_streaming_latency", STREAM_LATENCY);
+        }
+
         if (OUTPUT_FORMAT) qs.set("output_format", OUTPUT_FORMAT);
 
         const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream${qs.toString() ? `?${qs.toString()}` : ""}`;
