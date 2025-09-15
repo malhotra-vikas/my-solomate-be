@@ -446,7 +446,7 @@ export async function POST(req: NextRequest) {
           model: chatModel as string,
           messages: messagesForAI,
           max_completion_tokens: maxTokens, // ✅ GPT-5 expects this
-          tools: internetTools
+//          tools: internetTools
         };
       } else {
         generationOptions = {
@@ -455,14 +455,14 @@ export async function POST(req: NextRequest) {
           max_tokens: maxTokens, // ✅ GPT-4 family expects this
           temperature: CALL_TEMPERATURE,
           stop: CALL_STOP,
-          tools: internetTools
+//          tools: internetTools
         };
       }
     } else {
       generationOptions = {
         model: chatModel as string,
         messages: messagesForAI,
-        tools: internetTools
+//        tools: internetTools
       };
     }
 
