@@ -150,7 +150,10 @@ const stripEmojis = (s: string) =>
 
 // Helper: strip % $ # and other non-alphanumeric (except spaces and .,!?)
 const stripSpecialChars = (s: string) =>
-  s.replace(/[%$#@&*()[\]{}<>^~`|\\/:;"'=+]/g, "");
+  s.replace(
+    /[%$#@&*(){}/<>^~`|\\:;'"=+]/g, // removes unsafe symbols
+    ""
+  );
 
 
 function shouldUseInternetSearch(userMessage: string): boolean {
@@ -372,7 +375,7 @@ export async function POST(req: NextRequest) {
       enhancedPrompt += `\n\nThe user's first name is ${firstName}. Use it naturally to personalize responses.`;
     }
 
-    if(isCall) {
+    if (isCall) {
       enhancedPrompt += `\n\n Whenever it feels natural, add expressive cues such as [laughter], [sigh], [giggle], [excited], [laugh], [whisper], [pause].
       Only insert them where a human would realistically do so, and keep them subtle.
       Do not overuse them; at most 1–2 per short reply, and sometimes none.
@@ -452,7 +455,7 @@ export async function POST(req: NextRequest) {
           model: chatModel as string,
           messages: messagesForAI,
           max_completion_tokens: maxTokens, // ✅ GPT-5 expects this
-//          tools: internetTools
+          //          tools: internetTools
         };
       } else {
         generationOptions = {
@@ -461,14 +464,14 @@ export async function POST(req: NextRequest) {
           max_tokens: maxTokens, // ✅ GPT-4 family expects this
           temperature: CALL_TEMPERATURE,
           stop: CALL_STOP,
-//          tools: internetTools
+          //          tools: internetTools
         };
       }
     } else {
       generationOptions = {
         model: chatModel as string,
         messages: messagesForAI,
-//        tools: internetTools
+        //        tools: internetTools
       };
     }
 
@@ -528,8 +531,10 @@ export async function POST(req: NextRequest) {
 
       console.log("Before Emojee strip", { aiResponse });
       aiResponse = stripEmojis(aiResponse);
-      aiResponse = stripSpecialChars(aiResponse);
       console.log("After Emojee strip", { aiResponse });
+
+      aiResponse = stripSpecialChars(aiResponse);
+      console.log("After Special CHars strip", { aiResponse });
 
       const after = aiResponse.length;
       const cap1 = ms();
