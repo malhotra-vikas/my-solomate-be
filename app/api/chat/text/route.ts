@@ -153,6 +153,28 @@ const stripSpecialChars = (s: string) =>
   s.replace(/[%$#@&*()[\]{}<>^~`|\\/:;"'=+]/g, "");
 
 
+function shouldUseInternetSearch(userMessage: string): boolean {
+  // Load from env, or fallback to defaults
+  const triggers =
+    process.env.SEARCH_TRIGGER_KEYWORDS?.split(",").map((s) => s.trim().toLowerCase()) || [
+      "latest",
+      "today",
+      "current",
+      "this week",
+      "this month",
+      "breaking",
+      "recent",
+      "news",
+      "update",
+      "score",
+      "who won",
+      "release date",
+    ];
+
+  const lower = userMessage.toLowerCase();
+  return triggers.some((kw) => lower.includes(kw));
+}
+
 // ✅ POST: Create a single chat message and persist it
 export async function POST(req: NextRequest) {
   // helpers for timing/size (logging only)
@@ -403,10 +425,19 @@ export async function POST(req: NextRequest) {
     // ---------- Build generation options ----------
     let generationOptions: any;
     let maxTokens = Number(process.env.CALL_MAX_TOKENS) ?? 200
+    const useInternetSearch = shouldUseInternetSearch(message);
 
     if (isCall) {
-      maxTokens = 1500
+      maxTokens = 250
     }
+
+    // Add web search tool (can toggle with an env or request flag if desired)
+    const internetTools = [
+      {
+        type: "web_search_preview",
+        search_context_size: "low", // low / medium / high depending on cost vs depth
+      },
+    ];
 
     if (isCall) {
       // Check if model is GPT-5
@@ -414,7 +445,8 @@ export async function POST(req: NextRequest) {
         generationOptions = {
           model: chatModel as string,
           messages: messagesForAI,
-          max_completion_tokens: maxTokens // ✅ GPT-5 expects this
+          max_completion_tokens: maxTokens, // ✅ GPT-5 expects this
+          ...(useInternetSearch ? { tools: internetTools } : {}), // ✅ add conditionally
         };
       } else {
         generationOptions = {
@@ -423,12 +455,14 @@ export async function POST(req: NextRequest) {
           max_tokens: maxTokens, // ✅ GPT-4 family expects this
           temperature: CALL_TEMPERATURE,
           stop: CALL_STOP,
+          ...(useInternetSearch ? { tools: internetTools } : {}), // ✅ add conditionally
         };
       }
     } else {
       generationOptions = {
         model: chatModel as string,
         messages: messagesForAI,
+        ...(useInternetSearch ? { tools: internetTools } : {}), // ✅ add conditionally
       };
     }
 
