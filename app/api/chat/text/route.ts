@@ -372,6 +372,12 @@ export async function POST(req: NextRequest) {
       enhancedPrompt += `\n\nThe user's first name is ${firstName}. Use it naturally to personalize responses.`;
     }
 
+    if(isCall) {
+      enhancedPrompt += `\n\n Whenever it feels natural, add expressive cues such as [laughter], [sigh], [giggle], [excited], [laugh], [whisper], [pause].
+      Only insert them where a human would realistically do so, and keep them subtle.
+      Do not overuse them; at most 1–2 per short reply, and sometimes none.
+      Format the cues in square brackets, e.g., "That was hilarious [laughter].`;
+    }
 
     if (similarExamples.length > 0) {
       enhancedPrompt += "\n\nHere are some examples of how you should respond based on your training:\n";
