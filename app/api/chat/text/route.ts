@@ -412,6 +412,7 @@ export async function POST(req: NextRequest) {
 
     if (isCall) {
       enhancedPrompt = enhancedPrompt + "You must reply in ≤ 30 words."
+      console.log("In Call Prompt being used is ", enhancedPrompt)
     }
 
     if (recentConversations && recentConversations.length > 0) {
@@ -437,7 +438,7 @@ export async function POST(req: NextRequest) {
     const useInternetSearch = shouldUseInternetSearch(message);
 
     if (isCall) {
-      maxTokens = 250
+      maxTokens = 1500
     }
 
     // Add web search tool (can toggle with an env or request flag if desired)
