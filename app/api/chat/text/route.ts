@@ -376,10 +376,12 @@ export async function POST(req: NextRequest) {
     }
 
     if (isCall) {
-      enhancedPrompt += `\n\n Whenever it feels natural, add expressive cues such as [laughter], [sigh], [giggle], [excited], [laugh], [whisper], [pause].
+      enhancedPrompt += `\n\n Whenever it feels natural, add emotion and delivery tags for Eleven v3, you can use 
+      [sad], [giggle], [laughing], [whispering], [pause], [angry], [happily], [clears throat], [sighs], [curious], [crying], and [mischievously]. 
+      These can really help in shaping the emotional tone and delivery of your generated speech.
       Only insert them where a human would realistically do so, and keep them subtle.
       Do not overuse them; at most 1–2 per short reply, and sometimes none.
-      Format the cues in square brackets, e.g., "That was hilarious [laughter].`;
+      Format the tags in square brackets, e.g., "That was hilarious [laughter].`;
     }
 
     if (similarExamples.length > 0) {
