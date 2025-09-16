@@ -13,7 +13,11 @@ export async function GET(req: NextRequest) {
   const supabase = createClient()
 
   try {
-    const { data: userProfile, error } = await supabase.from("users").select("*").eq("id", userId).single()
+    const { data: userProfile, error } = await supabase.from("users").select("*").eq("id", userId).maybeSingle()
+
+    if (!userProfile) {
+      return NextResponse.json({ error: "User profile not found" }, { status: 404 })
+    }
 
     if (error || !userProfile) {
       console.error("Error fetching user profile:", error)
@@ -37,7 +41,7 @@ export async function PUT(req: NextRequest) {
     const updates = await req.json()
     const supabase = createClient()
 
-    const { data, error } = await supabase.from("users").update(updates).eq("id", userId).select().single()
+    const { data, error } = await supabase.from("users").update(updates).eq("id", userId).select().maybeSingle()
 
     if (error) {
       console.error("Error updating user profile:", error)
