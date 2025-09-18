@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
     const { data: plans, error } = await supabase
        .from("plans")
-       .select("id, created_at, name, talk_time, cost")
+       .select("*")
        .order("cost", { ascending: true });
 
     if (error || !plans) {
