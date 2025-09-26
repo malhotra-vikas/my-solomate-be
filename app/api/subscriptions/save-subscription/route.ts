@@ -89,7 +89,15 @@ export async function POST(req: NextRequest) {
             })
             .eq("id", existingSub.id)
             .select()
-            .single();
+            .maybeSingle();
+
+          if (newRecError) {
+            throw newRecError;
+          }
+
+          if (!data) {
+            throw new Error("Subscription update returned no data");
+          }
 
           return NextResponse.json(
             { message: "Subscription plan update successfully", data },
@@ -105,10 +113,17 @@ export async function POST(req: NextRequest) {
       .from("subscriptions")
       .insert(insertData)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error Save subscription:", error);
+      return NextResponse.json(
+        { error: "Failed to save subscription" },
+        { status: 500 }
+      );
+    }
+
+    if (!data) {
       return NextResponse.json(
         { error: "Failed to save subscription" },
         { status: 500 }

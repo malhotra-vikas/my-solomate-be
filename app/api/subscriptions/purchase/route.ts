@@ -23,9 +23,21 @@ export async function POST(req: NextRequest) {
     const supabase = createClient()
 
     if (tier === "add_on") {
-      updateData.talk_time_minutes =
-        (await supabase.from("users").select("talk_time_minutes").eq("id", userId).single()).data?.talk_time_minutes +
-        minutes
+      const {
+        data: talkTimeRow,
+        error: talkTimeError,
+      } = await supabase.from("users").select("talk_time_minutes").eq("id", userId).maybeSingle()
+
+      if (talkTimeError) {
+        console.error("Error fetching user talk time:", talkTimeError)
+        return NextResponse.json({ error: "Failed to update user tier" }, { status: 500 })
+      }
+
+      if (!talkTimeRow) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 })
+      }
+
+      updateData.talk_time_minutes = (talkTimeRow.talk_time_minutes ?? 0) + minutes
       updateData.talk_time_expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // Expires in 30 days
       subscriptionData.minutes_purchased = minutes
       subscriptionData.minutes_remaining = minutes

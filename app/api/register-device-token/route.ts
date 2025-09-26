@@ -56,10 +56,18 @@ export async function POST(req: NextRequest) {
     //   { onConflict: "user_id" } // assumes user_id is unique or primary
     )
     .select()
-    .single();
+    .maybeSingle();
 
     if (error) {
         console.error("Supabase error:", error.message);
+        return NextResponse.json(
+          { error: "Failed to register device token" },
+          { status: 500 }
+        );
+      }
+
+      if (!data) {
+        console.error("Supabase upsert returned no row for device token registration");
         return NextResponse.json(
           { error: "Failed to register device token" },
           { status: 500 }

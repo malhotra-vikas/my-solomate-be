@@ -17,7 +17,7 @@ export async function DELETE(req: Request) {
             .from('users')
             .select('*')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
         if (currentUserError) {
             console.error("Supabase error:", currentUserError);
@@ -98,7 +98,7 @@ export async function GET(req: Request) {
             .from('users')
             .select('*')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
         if (error) {
             console.error("Supabase error:", error);
@@ -160,11 +160,26 @@ export async function PUT(req: Request) {
 
         const supabase = createClient();
 
-        const { data: currentUser } = await supabase
+        const { data: currentUser, error: currentUserError } = await supabase
             .from('users')
             .select('photo_url')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
+
+        if (currentUserError) {
+            console.error("Supabase fetch photo_url error:", currentUserError);
+            return NextResponse.json(
+                { error: "Failed to update user data" },
+                { status: 500 }
+            );
+        }
+
+        if (!currentUser) {
+            return NextResponse.json(
+                { error: "User not found" },
+                { status: 404 }
+            );
+        }
 
         let photoUrl = currentUser?.photo_url || null;
         let shouldDeleteOldImage = false;
@@ -239,13 +254,20 @@ export async function PUT(req: Request) {
             .update(updateData)
             .eq('id', userId)
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) {
             console.error("Supabase update error:", error);
             return NextResponse.json(
                 { error: "Failed to update user data" },
                 { status: 500 }
+            );
+        }
+
+        if (!data) {
+            return NextResponse.json(
+                { error: "User not found" },
+                { status: 404 }
             );
         }
 
