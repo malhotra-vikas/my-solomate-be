@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const supabase = createClient()
 
     // 2. Store user profile in Supabase
-    const { data, error } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from("users")
       .insert({
         id: userRecord.uid,
@@ -30,16 +30,16 @@ export async function POST(req: NextRequest) {
         name: userRecord.displayName,
       })
       .select()
-      .single()
+      .maybeSingle()
 
-    console.log("🔁 Inserted into Supabase:", data, "Error:", error)
-
-    if (error) {
-      // If Supabase insertion fails, delete Firebase user to prevent orphaned accounts
-      await auth.deleteUser(userRecord.uid)
-      console.error("Supabase user creation error:", error)
-      return NextResponse.json({ error: "Failed to create user profile" }, { status: 500 })
+    // Handle errors
+    if (userError || !userData) {
+      await auth.deleteUser(userRecord.uid);
+      console.error("Supabase user creation error:", userError);
+      return NextResponse.json({ error: "Failed to create user profile" }, { status: 500 });
     }
+
+    console.log("🔁 Inserted into Supabase:", userData, "Error:", userError)
 
     // 3. Store user subscription in Supabase
     const { data: subData, error: subError } = await supabase
@@ -48,15 +48,21 @@ export async function POST(req: NextRequest) {
         user_id: userRecord.uid,
       })
       .select()
-      .single()
+      .maybeSingle()
+
+
+    if (subError || !subData) {
+      console.error("Supabase subscription creation error:", subError);
+      // optional: rollback user insert here if you want strict consistency
+      return NextResponse.json({ error: "Failed to create subscription" }, { status: 500 });
+    }
 
     console.log("🔁 Inserted into Supabase Subscriptions:", subData, "Error:", subError)
-
 
     return NextResponse.json(
       {
         message: "User signed up successfully",
-        user: data as UserProfile,
+        user: userData as UserProfile,
       },
       { status: 201 },
     )

@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, { params }: { params?: { id?: string
         .select("*")
         .eq("id", personaId)
         .eq("is_active", true)
-        .single()
+        .maybeSingle()
 
       if (error || !persona) {
         console.error("Persona not found:", error)
@@ -174,10 +174,14 @@ export async function POST(req: NextRequest) {
         time_travel_era: time_travel_era || ""
       })
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error("Error creating persona:", error)
+      return NextResponse.json({ error: "Failed to create persona" }, { status: 500 })
+    }
+
+    if (!persona) {
       return NextResponse.json({ error: "Failed to create persona" }, { status: 500 })
     }
 

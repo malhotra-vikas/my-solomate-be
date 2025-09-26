@@ -23,10 +23,14 @@ export async function POST(req: NextRequest) {
             .select("id, status")
             .eq("id", notificationId)
             .eq("user_id", userId)
-            .single()
+            .maybeSingle()
 
         if (fetchError) {
             console.error("🔍 Notification fetch error:", fetchError)
+            return NextResponse.json({ error: "Failed to fetch notification" }, { status: 500 })
+        }
+
+        if (!existing) {
             return NextResponse.json({ error: "Notification not found or access denied" }, { status: 404 })
         }
 

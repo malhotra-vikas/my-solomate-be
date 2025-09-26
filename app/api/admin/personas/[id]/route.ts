@@ -24,7 +24,7 @@ export async function DELETE(
             .from("personas")
             .select("*")
             .eq("id", personaId)
-            .single();
+            .maybeSingle();
 
         if (fetchError) throw fetchError;
         if (!persona) {

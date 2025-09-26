@@ -23,7 +23,11 @@ export async function POST(req: NextRequest) {
     const supabase = createClient()
 
     // 1. Fetch user profile
-    const { data: userProfile, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
+    const { data: userProfile, error: userError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle()
 
     if (userError || !userProfile) {
       console.error("User profile not found:", userError)
@@ -31,7 +35,11 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Fetch user subscription and check talk time
-    const { data: userSubscription, error: userSubscriptionError } = await supabase.from("subscriptions").select("*").eq("user_id", userId).single()
+    const { data: userSubscription, error: userSubscriptionError } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle()
 
     if (userSubscriptionError || !userSubscription) {
       console.error("User subscription not found:", userSubscriptionError)
@@ -61,7 +69,7 @@ export async function POST(req: NextRequest) {
       .from("personas")
       .select("*")
       .eq("id", personaId)
-      .single()
+      .maybeSingle()
 
     if (personaError || !persona) {
       console.error("Persona not found:", personaError)

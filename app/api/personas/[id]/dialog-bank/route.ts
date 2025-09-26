@@ -71,10 +71,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         created_by: decodedToken.uid,
       })
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error("Error creating dialog example:", error)
+      return NextResponse.json({ success: false, error: "Failed to create dialog example" }, { status: 500 })
+    }
+
+    if (!dialog) {
       return NextResponse.json({ success: false, error: "Failed to create dialog example" }, { status: 500 })
     }
 
@@ -122,7 +126,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       .eq("id", dialogId)
       .eq("persona_id", personaId)
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error("Error updating dialog example:", error)
