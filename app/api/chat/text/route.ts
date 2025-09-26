@@ -195,11 +195,8 @@ export async function POST(req: NextRequest) {
     const tParse0 = ms();
     const { personaId, message, initiateChat, isCall } = await req.json();
     const tParse1 = ms();
-    console.log("[CHAT] request_parsed", { ms: Math.round(tParse1 - tParse0), initiateChat, isCall });
 
-    console.log("[CHAT] received_user_message", { len: (message?.length ?? 0) });
-
-    if (!personaId && (message || initiateChat)) {
+    if (!personaId && (message || initiateChat)) { 
       return NextResponse.json({ error: "Persona ID is required" }, { status: 400 });
     }
 
