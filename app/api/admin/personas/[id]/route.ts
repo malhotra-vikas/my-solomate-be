@@ -1,6 +1,57 @@
 import { createClient } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
+// DELETE - remove persona by id
+export async function DELETE(
+    req: NextRequest,
+    context: { params: Promise<{ id: string }> }
+) {
+    const { id } = await context.params; // ✅ await before accessing
+    const personaId = id;
+
+    if (!personaId) {
+        return NextResponse.json(
+            { error: "Persona ID is required" },
+            { status: 400 }
+        );
+    }
+
+    const supabase = createClient();
+
+    try {
+        // Fetch the persona first so we know what files to delete
+        const { data: persona, error: fetchError } = await supabase
+            .from("personas")
+            .select("*")
+            .eq("id", personaId)
+            .single();
+
+        if (fetchError) throw fetchError;
+        if (!persona) {
+            return NextResponse.json(
+                { error: "Persona not found" },
+                { status: 404 }
+            );
+        }
+
+        // Delete the persona from DB
+        const { error: deleteError } = await supabase
+            .from("personas")
+            .delete()
+            .eq("id", personaId);
+
+        if (deleteError) throw deleteError;
+
+        return NextResponse.json(
+            { message: "Persona deleted successfully" },
+            { status: 200 }
+        );
+    } catch (error: any) {
+        console.error("Error deleting persona:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
 // PUT - update persona by id
 export async function PUT(
     req: NextRequest,
@@ -60,29 +111,29 @@ export async function PUT(
         // Upload video file (avatar_video_url)
         const videoFile = formData.get("avatar_video_url") as File | null;
         if (videoFile) {
-          const videoName = `video_${Date.now()}.${videoFile.name.split(".").pop()}`;
+            const videoName = `video_${Date.now()}.${videoFile.name.split(".").pop()}`;
 
-          // Upload with correct Content-Type
-          const { error: uploadError } = await supabase.storage
-            .from("personas-photo-video")
-            .upload(videoName, videoFile, {
-              cacheControl: "3600",
-              upsert: true,
-              contentType: videoFile.type || "video/mp4",
-            });
+            // Upload with correct Content-Type
+            const { error: uploadError } = await supabase.storage
+                .from("personas-photo-video")
+                .upload(videoName, videoFile, {
+                    cacheControl: "3600",
+                    upsert: true,
+                    contentType: videoFile.type || "video/mp4",
+                });
 
-          if (uploadError) throw uploadError;
+            if (uploadError) throw uploadError;
 
-          // Create signed URL valid for 7 days
-          const { data: signedData, error: signedError } =
-            await supabase.storage
-              .from("personas-photo-video")
-              .createSignedUrl(videoName, 60 * 60 * 24 * 7);
+            // Create signed URL valid for 7 days
+            const { data: signedData, error: signedError } =
+                await supabase.storage
+                    .from("personas-photo-video")
+                    .createSignedUrl(videoName, 60 * 60 * 24 * 7);
 
-          if (signedError) throw signedError;
+            if (signedError) throw signedError;
 
-          // Store signed URL in DB
-          updates.avatar_video_url = signedData.signedUrl;
+            // Store signed URL in DB
+            updates.avatar_video_url = signedData.signedUrl;
         }
 
         // Update database
