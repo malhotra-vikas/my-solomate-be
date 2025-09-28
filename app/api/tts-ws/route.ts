@@ -89,7 +89,8 @@ export async function POST(req: NextRequest) {
             headers: {
                 "xi-api-key": apiKey,
                 "accept": "audio/mpeg"
-            }
+            },
+            perMessageDeflate: false,  // prevent mask error
         })
 
         let firstByteAt: number | null = null
