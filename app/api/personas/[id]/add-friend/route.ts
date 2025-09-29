@@ -26,7 +26,7 @@ try {
     .from("personas")
     .select("id")
     .eq("id", personaId)
-    .single()
+    .maybeSingle()
 
   if (personaError || !persona) {
     return NextResponse.json({ error: "Persona not found" }, { status: 404 })
@@ -40,7 +40,7 @@ try {
     .from("user_personas")
     .insert({ user_id: userId, persona_id: personaId })
     .select()
-    .single()
+    .maybeSingle()
 
   if (error) {
     if (error.code === "23505") {

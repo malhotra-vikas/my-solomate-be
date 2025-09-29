@@ -26,7 +26,7 @@ export async function GET(req: NextRequest, { params }: { params?: { id?: string
         .select("*")
         .eq("id", personaId)
         .eq("is_active", true)
-        .single()
+        .maybeSingle()
 
       if (error || !persona) {
         console.error("Persona not found:", error)
@@ -81,11 +81,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       .update(updates)
       .eq("id", params.id)
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error("Error updating persona:", error)
       return NextResponse.json({ error: "Failed to update persona" }, { status: 500 })
+    }
+
+    if (!persona) {
+      return NextResponse.json({ error: "Persona not found" }, { status: 404 })
     }
 
     return NextResponse.json(persona, { status: 200 })
@@ -111,11 +115,15 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       .update({ is_active: false })
       .eq("id", id)
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error("Error deleting persona:", error)
       return NextResponse.json({ error: "Failed to delete persona" }, { status: 500 })
+    }
+
+    if (!persona) {
+      return NextResponse.json({ error: "Persona not found" }, { status: 404 })
     }
 
     return NextResponse.json({ message: "Solo Mate deleted successfully" }, { status: 200 })

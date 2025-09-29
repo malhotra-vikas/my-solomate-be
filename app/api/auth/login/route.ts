@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     const { idToken } = await req.json()
     const supabase = createClient()
 
-    
+
     // Verify Firebase ID token
     const decodedToken = await auth.verifyIdToken(idToken)
     const uid = decodedToken.uid
@@ -16,9 +16,14 @@ export async function POST(req: NextRequest) {
     console.log("🔑 Login UID:", uid)
 
     // Fetch user profile from Supabase
-    const { data: userProfile, error } = await supabase.from("users").select("*").eq("id", uid).single()
+    const { data: userProfile, error } = await supabase.from("users").select("*").eq("id", uid).maybeSingle()
 
-    if (error || !userProfile) {
+    if (error) {
+      console.error("Supabase error fetching user profile:", error);
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
+    }
+
+    if (!userProfile) {
       console.error("User profile not found in Supabase:", error)
       return NextResponse.json({ error: "User profile not found" }, { status: 404 })
     }

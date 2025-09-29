@@ -4,7 +4,7 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: NextRequest) {
-    const RECIPIENTS = process.env.ISSUE_REPORT_RECIPIENTS
+    const RECIPIENTS = process.env.ISSUE_REPORT_RECIPIENTS?.split(",").map(r => r.trim());
 
     if (!process.env.RESEND_API_KEY || !RECIPIENTS) {
         return NextResponse.json({ error: "Server not properly configured" }, { status: 500 })
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await resend.emails.send({
         from: 'onboarding@resend.dev',
-        to: [RECIPIENTS], // replace with your team
+        to: RECIPIENTS, // comma saparated emails
         subject: `[Issue Reported] ${subject}`,
         replyTo: userEmail,
         text: `From: ${userEmail || 'anonymous'}\n\n${message}`,

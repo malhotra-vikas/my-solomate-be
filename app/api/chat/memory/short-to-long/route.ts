@@ -36,10 +36,14 @@ export async function POST(req: NextRequest) {
         embedding: embedding,
       })
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error("Error storing long-term memory:", error)
+      return NextResponse.json({ error: "Failed to store long-term memory" }, { status: 500 })
+    }
+
+    if (!data) {
       return NextResponse.json({ error: "Failed to store long-term memory" }, { status: 500 })
     }
 

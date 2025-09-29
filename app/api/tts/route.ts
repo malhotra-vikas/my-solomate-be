@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
             .select("*")
             .eq("id", personaId)
             .eq("is_active", true)
-            .single()
+            .maybeSingle()
         const tPersona1 = ms();
         console.log("[TTS] persona_fetch", { ms: Math.round(tPersona1 - tPersona0), ok: !personaErr })
 

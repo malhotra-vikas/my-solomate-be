@@ -19,21 +19,36 @@ export async function POST(req: NextRequest) {
 
     // Store device token in user preferences or a dedicated table
     // For simplicity, adding to user preferences JSONB
+    const { data: currentPreferences, error: preferencesError } = await supabase
+      .from("users")
+      .select("preferences")
+      .eq("id", userId)
+      .maybeSingle()
+
+    if (preferencesError) {
+      console.error("Error fetching existing preferences:", preferencesError)
+      return NextResponse.json({ error: "Failed to register device token" }, { status: 500 })
+    }
+
     const { data, error } = await supabase
       .from("users")
       .update({
         preferences: {
-          ...(await supabase.from("users").select("preferences").eq("id", userId).single()).data?.preferences,
+          ...(currentPreferences?.preferences ?? {}),
           deviceToken: deviceToken,
         },
       })
       .eq("id", userId)
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error("Error registering device token:", error)
       return NextResponse.json({ error: "Failed to register device token" }, { status: 500 })
+    }
+
+    if (!data) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     return NextResponse.json({ message: "Device token registered successfully" }, { status: 200 })

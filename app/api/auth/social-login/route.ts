@@ -5,22 +5,26 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     const { email, name, id, photoUrl } = await req.json();
-
     const supabase = createClient();
 
-    const { data: existData, error: existDataError } = await supabase
+    // 1. Check if user already exists
+    const { data: existData, error: existError } = await supabase
       .from("users")
       .select("*")
       .eq("email", email)
-      .single(); // because email should be unique
+      .maybeSingle(); // safer than .single()
+
+    if (existError) {
+      console.error("Error checking existing user:", existError);
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
+    }
 
     if (existData) {
-
       if (existData?.status === "Deleted") {
         return NextResponse.json(
           { error: { message: "This account has been deactivated" } },
           { status: 403 }
-        )
+        );
       }
 
       return NextResponse.json(
@@ -32,46 +36,52 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Store user profile in Supabase
-    const { data, error } = await supabase
+    // 2. Store new user profile
+    const { data: newUser, error: insertError } = await supabase
       .from("users")
       .insert({
         id,
-        email: email,
-        name: name,
+        email,
+        name,
         photo_url: photoUrl,
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    console.log("🔁 Inserted into Supabase:", data, "Error:", error);
-
-    if (error) {
-      // If Supabase insertion fails, delete Firebase user to prevent orphaned accounts
-      //   await auth.deleteUser(userRecord.uid);
-      console.error("Supabase user creation error:", error);
+    if (insertError || !newUser) {
+      console.error("Supabase user creation error:", insertError);
       return NextResponse.json(
         { error: "Failed to create user profile" },
         { status: 500 }
       );
     }
 
-    // 3. Store user subscription in Supabase
+    console.log("🔁 Inserted into Supabase:", newUser);
+
+    // 3. Store user subscription
     const { data: subData, error: subError } = await supabase
       .from("subscriptions")
       .insert({
         user_id: id,
       })
       .select()
-      .single()
+      .maybeSingle();
 
-    console.log("🔁 Inserted into Supabase Subscriptions:", subData, "Error:", subError)
+    if (subError || !subData) {
+      console.error("Supabase subscription creation error:", subError);
+      // optional rollback of user insert could go here
+      return NextResponse.json(
+        { error: "Failed to create subscription" },
+        { status: 500 }
+      );
+    }
 
+    console.log("🔁 Inserted into Supabase Subscriptions:", subData);
 
     return NextResponse.json(
       {
         message: "User signed up successfully",
-        user: data as UserProfile,
+        user: newUser as UserProfile,
       },
       { status: 201 }
     );

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       .from("users")
       .select("preferences")
       .eq("id", userId)
-      .single()
+      .maybeSingle()
 
     if (userError || !user || !user.preferences?.deviceToken) {
       console.warn(`No device token found for user ${userId} or user not found.`)
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       .from("personas")
       .select("name, tone_description")
       .eq("id", personaId)
-      .single()
+      .maybeSingle()
 
     if (personaError || !persona) {
       console.warn(`Persona ${personaId} not found.`)

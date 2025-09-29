@@ -7,7 +7,11 @@ export async function POST(req: NextRequest) {
     const { email } = await req.json();
     const supabase = createClient();
 
-    const { data: userProfile, error } = await supabase.from("users").select("*").eq("email", email).single()
+    const { data: userProfile, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", email)
+      .maybeSingle()
 
     if (error || !userProfile) {
       console.error("User profile not found in Supabase:", error)

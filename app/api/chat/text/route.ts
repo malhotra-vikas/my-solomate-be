@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     .select("*")
     .eq("id", chatId)
     .eq("user_id", userId)
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
     return NextResponse.json({ error: "Chat not found" }, { status: 404 })
@@ -53,7 +53,7 @@ export async function DELETE(req: NextRequest) {
       .select("id")
       .eq("id", chatId)
       .eq("user_id", userId)
-      .single()
+      .maybeSingle()
 
     if (selectError || !data) {
       return NextResponse.json({ error: "No matching Chat found for user" }, { status: 404 })
@@ -208,7 +208,7 @@ export async function POST(req: NextRequest) {
 
       const tUser0 = ms();
       const { data: userProfile, error: userError } =
-        await supabase.from("users").select("*").eq("id", userId).single();
+        await supabase.from("users").select("*").eq("id", userId).maybeSingle();
       const tUser1 = ms();
       console.log("[DB] user_profile", { ms: Math.round(tUser1 - tUser0), ok: !userError });
 
@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
 
       const tPersona0 = ms();
       const { data: persona, error: personaError } =
-        await supabase.from("personas").select("*").eq("id", personaId).single();
+        await supabase.from("personas").select("*").eq("id", personaId).maybeSingle();
       const tPersona1 = ms();
       console.log("[DB] persona", { ms: Math.round(tPersona1 - tPersona0), ok: !personaError });
 
@@ -320,8 +320,8 @@ export async function POST(req: NextRequest) {
     const tDbAll0 = ms();
 
     const [userRes, personaRes, convRes] = await Promise.all([
-      supabase.from("users").select("*").eq("id", userId).single(),
-      supabase.from("personas").select("*").eq("id", personaId).single(),
+      supabase.from("users").select("*").eq("id", userId).maybeSingle(),
+      supabase.from("personas").select("*").eq("id", personaId).maybeSingle(),
       supabase
         .from("conversations")
         .select("role, content, timestamp")
