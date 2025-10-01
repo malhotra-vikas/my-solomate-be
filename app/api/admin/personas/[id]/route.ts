@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase";
+import { parseBoolean, queuePersonaNotification } from "../notifications";
 import { NextRequest, NextResponse } from "next/server";
 
 // DELETE - remove persona by id
@@ -70,12 +71,15 @@ export async function PUT(
     try {
         const formData = await req.formData();
 
+        const sendNotification = parseBoolean(formData.get("send_notification"));
+
         const updates: Record<string, any> = {};
         formData.forEach((value, key) => {
             if (
                 typeof value === "string" &&
                 !key.startsWith("avatar_url_") &&
-                key !== "avatar_video_url"
+                key !== "avatar_video_url" &&
+                key !== "send_notification"
             ) {
                 try {
                     // Try parsing JSON-like fields
@@ -144,6 +148,10 @@ export async function PUT(
             .select();
 
         if (updateError) throw updateError;
+
+        if (sendNotification && data?.[0]?.is_active) {
+            await queuePersonaNotification(supabase, data[0]);
+        }
 
         return NextResponse.json(
             { message: "Persona updated successfully", data },

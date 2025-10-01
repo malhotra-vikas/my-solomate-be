@@ -1,4 +1,3 @@
-import { queueNotificationToSQS } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
@@ -170,7 +169,7 @@ export async function POST(req: NextRequest) {
         console.error("Failed to fetch users:", error)
         return
       }
-
+/*
       console.log("Need to send notifications to :", allUsers.length, " users. ")
 
       const notifications = allUsers.map(({ id }) =>
@@ -194,6 +193,7 @@ export async function POST(req: NextRequest) {
       if (failures.length > 0) {
         console.warn(`⚠️ ${failures.length} notifications failed`)
       }
+*/        
     } catch (err) {
       console.error("Failed to queue notification:", err)
     }
