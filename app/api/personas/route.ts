@@ -54,8 +54,9 @@ export async function GET(req: NextRequest, { params }: { params?: { id?: string
       const { data: userPersonas, error: userError } = await supabase
         .from("user_personas")
         .select("persona_id")
-        .eq("user_id", currentUserId);
-    
+        .eq("user_id", currentUserId)
+        .order("created_at", { ascending: false }); // ✅ order by user_personas.created_at
+
       if (allError || userError) {
         console.error("Error fetching personas:", allError || userError);
         return NextResponse.json({ error: "Failed to fetch personas" }, { status: 500 });
@@ -81,6 +82,7 @@ export async function GET(req: NextRequest, { params }: { params?: { id?: string
         .from("user_personas")
         .select("persona:personas(*)")
         .eq("user_id", queryUserId)
+        .order("created_at", { ascending: false }); // ✅ order by user_personas.created_at
 
       if (error) {
         console.error("Error fetching personas for user_id:", error)
